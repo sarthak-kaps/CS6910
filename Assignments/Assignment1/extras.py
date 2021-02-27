@@ -51,20 +51,3 @@ activations_derivatives = {"sigmoid" : sigmoid_derivative, "tanh" : tanh_derivat
 optimizers = {}
 
 
-y_true = []
-y_pred = []
-
-n = int(input())
-k = int(input())
-
-for i in range(0, n):
-    x = int(input())
-    y_true.append(x)
-for i in range(0, n):
-    pred = []
-    for j in range(0, k):
-        x = float(input())
-        pred.append(x)
-    y_pred.append(pred)
-
-print(cross_entropy(y_true, y_pred))
