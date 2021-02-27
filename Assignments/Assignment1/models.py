@@ -66,6 +66,7 @@ class Dense:
 
     def set_bias(self, bias): self.bias = bias
 
+
     def get_bias(self): return self.bias
 
 
@@ -119,6 +120,19 @@ class Sequential:
         pass
 
     def predict(self, X):
+        pass
+
+
+    "I am writing the pseude code for simple gradient_descent here"
+    "Arguments for gradient_descent can be the train data passed to fit"
+    def gradient_descent():
+        "Until convergence or max_iterations"
+        "Run forward propagation  ---> appropriate function call implemented by Rudra"
+        "Expected result -> at each layer the required values stated at line 10 should be set"
+
+        "Run backpropagation ---> appropriate function call implemented by Sarthak"
+        "Expected result -> for each layer the parameters will be set"
+
         pass
 
 
