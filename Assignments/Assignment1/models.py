@@ -109,3 +109,9 @@ class Sequential:
 
     def predict(self, X):
         pass
+
+
+
+''' 
+I need to first construct a gradient descent algorithm using backpropagation
+'''
