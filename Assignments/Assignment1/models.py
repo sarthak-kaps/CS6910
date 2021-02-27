@@ -5,6 +5,16 @@ import math
 import extras
 
 
+
+''' 
+Implementation of class Softmax needed for output layer
+Need to know when we are at the output layer
+For each layer following requiremnts -
+      1) For hidden layer - value output by each neuron (h_{i}) 1 <= i <= n, the value that goes into each neuron (a_{i}) and the weight matrix W and the bias vector b
+      2) For output layer - the class probability computed y_{i} 1 <= i <= k, the input into each neuron (a_{i}), the weight matrix W and the bias vector b  
+      ''
+'''
+
 class Dense:
     def __init__(self, units: int, activation="sigmoid", use_bias=True, weight_initializer='random', bias_initializer="random", **kwargs):
         """Creates a dense layer
@@ -68,6 +78,7 @@ class Sequential:
         return self
 
     def add(self, layer: Dense):
+        A
         if layer.input_dim and (len(self.layers) == 0):
             self.input_dim = layer.input_dim
         elif layer.input_dim and (len(self.layers) != 0):
@@ -112,6 +123,3 @@ class Sequential:
 
 
 
-''' 
-I need to first construct a gradient descent algorithm using backpropagation
-'''
