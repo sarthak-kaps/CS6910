@@ -79,7 +79,6 @@ class Sequential:
         return self
 
     def add(self, layer: Dense):
-        A
         if layer.input_dim and (len(self.layers) == 0):
             self.input_dim = layer.input_dim
         elif layer.input_dim and (len(self.layers) != 0):
@@ -121,6 +120,18 @@ class Sequential:
 
     def predict(self, X):
         pass
+
+   
+    "Assumption all vectors are numpy arrays and by default column vectors"
+    def back_propagation():
+        num_layers = len(self.layers)
+        output_layer = self.layers[num_layers - 1]
+        grad_a = output_layer.get_gradient()
+        for i in range(num_layers - 1, 0, -1):
+            weight_gradient = grad_a @ self.layers[i - 1].h.T
+            bias_gradient = grad_a
+            grad_h = self.layers[i].W.T @ grad_a
+            grad_a = grad_h * []
 
 
     "I am writing the pseude code for simple gradient_descent here"
