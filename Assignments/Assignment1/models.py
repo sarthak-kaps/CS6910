@@ -121,29 +121,37 @@ class Sequential:
     def predict(self, X):
         pass
 
-   
-    "Assumption all vectors are numpy arrays and by default column vectors"
-    def back_propagation():
+
+    # Assumption all vectors are numpy arrays and by default column vectors
+    def back_propagation(parameters):    # parameters contains the pair of W, b for each layer at which the gradient is to be computed
         num_layers = len(self.layers)
         output_layer = self.layers[num_layers - 1]
         grad_a = output_layer.get_gradient()
+        gradients = [] # the ith index of the gradients vector will contain the gradient with respect to weight, bias for the ith layer, stored as (grad(weight), grad(bias))
         for i in range(num_layers - 1, 0, -1):
-            weight_gradient = grad_a @ self.layers[i - 1].h.T
+            weight_gradient = grad_a @ self.layers[i - 1].h.T   # .h is the hidden layer output
             bias_gradient = grad_a
-            grad_h = self.layers[i].W.T @ grad_a
-            grad_a = grad_h * []
+            grad_h = parameters[i][0].T @ grad_a
+            grad_a = grad_h * np.array([extras.activations_derivatives[self.activation](e) for e in self.layers[i - 1].a]).T  # .a is the hidden layer input
+            gradients.append((weight_gradient, bias_gradient))
+        return gradients
 
-
-    "I am writing the pseude code for simple gradient_descent here"
-    "Arguments for gradient_descent can be the train data passed to fit"
+    # function to find gradient with respect to the parameters, please pass all the parameters, you can later use the ones that are important
+    def find_gradient(parameters):
+        # some preprocessing maybe needed
+        return back_propagation(parameters)
+    
+    # I am writing the pseude code for simple gradient_descent here
+    # Arguments for gradient_descent can be the train data passed to fit
     def gradient_descent():
-        "Until convergence or max_iterations"
-        "Run forward propagation  ---> appropriate function call implemented by Rudra"
-        "Expected result -> at each layer the required values stated at line 10 should be set"
+        '''
+        Until convergence or max_iterations
+        Run forward propagation  ---> appropriate function call implemented by Rudra
+        Expected result -> at each layer the required values stated at line 10 should be set
 
-        "Run backpropagation ---> appropriate function call implemented by Sarthak"
-        "Expected result -> for each layer the parameters will be set"
-
+        Run backpropagation ---> appropriate function call implemented by Sarthak
+        Expected result -> for each layer the parameters will be set
+        '''
         pass
 
 
