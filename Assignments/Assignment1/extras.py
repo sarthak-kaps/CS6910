@@ -17,7 +17,7 @@ class probabilities are zero indexed
 def cross_entropy(y_true, y_pred):
     c_e = 0
     for i in range(0, len(y_true)):
-        c_e += y_pred[i][y_true[i]]
+        c_e += np.log(y_pred[i][y_true[i]])
     return c_e / len(y_true)
 
 
