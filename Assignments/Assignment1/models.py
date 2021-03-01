@@ -1,6 +1,7 @@
 import numpy as np
 from typing import List
 import extras
+import optimizers
 
 
 '''
@@ -200,7 +201,9 @@ class Sequential:
         self.layers.append(layer)
 
     def compile(self, optimizer='rmsprop', loss="mse", metrics: list = ["accuracy"]):
-        self.optimizer = extras.optimizers.get(optimizer)
+        #self.optimizer = extras.optimizers.get(optimizer)
+        if optimizer == "SGD" :
+            self.optimizer = optimizers.SGD()  # pass appropriate parameters
         if self.optimizer is None:
             raise ValueError(
                 f"Optimizer {optimizer} not defined. Choices are {extras.optimizers.keys()}.")
@@ -237,6 +240,11 @@ class Sequential:
 
             
             # Here a call will be made to the optimizer to update the parameters
+            new_parameters = self.optimizer.apply_gradients(gradients, self.__get_all_parameters())
+            
+            for i in range(0, len(new_parameter)):
+                self.layers[i].set_weights(new_parameter[i][0])
+                self.layers[i].set_bias(new_parameters[i][1])
 
         for layer in self.layers:
             layer.flush_io()
@@ -278,7 +286,7 @@ class Sequential:
                 gradients.append((weight_gradient, None))
         
         gradients.reverse()
-        return gradients
+        return np.array(gradients)
     
     def __forward(self, X):
         n_layers = len(self.layers)
@@ -287,3 +295,8 @@ class Sequential:
             inp = self.layers[i](inp)
         return inp
 
+    def __get_all_parameters(self) :
+        parameters = []
+        for i in range(0, len(self.layers)):
+            parameters.append((self.layers[i].get_weights(), self.layers[i].get_bias()))
+        return np.array(parameters)
