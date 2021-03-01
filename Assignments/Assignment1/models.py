@@ -21,8 +21,10 @@ class Layer:
     built = False
 
     # Used for Backpropogation
-    h = None  # Input of this layer
-    a = None  # Output of this layer
+    h = None  # Output of this layer
+    a = None  # Input of this layer
+
+    # NOTE : I think h should be the output and a the input, try if you could change this
 
     input_dim = None
     output_dim = None
@@ -61,9 +63,14 @@ class Softmax(Layer):
         self.output_dim = self.input_dim
 
     def call(self, inputs):
-        self.h = inputs
-        self.a = extras.softmax(inputs)
-        return self.a
+        self.a = inputs
+        self.h = extras.softmax(inputs)
+        return self.h
+
+    def get_gradient(y) :
+        grad = np.zeros((len(a), 1))
+        grad[y] = 1   # assuming y is the true label
+        return grad - h   
 
 
 class Dense(Layer):
@@ -162,6 +169,10 @@ class Dense(Layer):
 
         self.bias = bias_init_fn((self.output_dim,))
 
+    
+    def get_gradient(self):
+        pass  # not being implemented for now
+        
 
 class Sequential:
     def __init__(self, layers: List[Layer] = None):
@@ -214,12 +225,18 @@ class Sequential:
                 layer.init_w_and_b()
 
         for i in range(epochs):
+
+            # Later on we will change X and y to support mini batch and stochastic gradient descent
             output = self.__forward(X)
-            self.__back_propagation(y)
+            gradients = self.__back_propagation(y)
+            
             if((i+1) % verbose == 0):
                 y_pred = np.argmax(output, axis=-1)
                 print(f"Epoch {i+1}/{epochs} Loss : {self.loss(y, y_pred)}",
                       ", ".join(list(map(lambda f: f(y, y_pred), self.metrics))))
+
+            
+            # Here a call will be made to the optimizer to update the parameters
 
         for layer in self.layers:
             layer.flush_io()
@@ -236,26 +253,33 @@ class Sequential:
     def predict_proba(self, X):
         return self.__forward(X)
 
-    # Where is bias being used in this function
-    # Also, as I am storing weights, biases, inputs and outputs in the layer.
-    # I removed parameters from this function
+    # Mostly done (a bit confused about the matrix multiplications !)
     def __back_propagation(self, y):
-        num_layers = len(self.layers)
-        output_layer = self.layers[num_layers - 1]
+        n_layers = len(self.layers)
+        output_layer = self.layers[n_layers - 1]
         grad_a = output_layer.get_gradient(y)
+        
+        gradients = []
         # the ith index of the gradients vector will contain the gradient with respect to weight, bias for the ith layer, stored as (grad(weight), grad(bias))
-        for i in range(num_layers - 1, 0, -1):
+        
+        for i in range(n_layers - 1, 0, -1):
             # .h is the hidden layer output
-            weight_gradient = grad_a @ self.layers[i - 1].h.T
-            self.layers[i-1].weights -= weight_gradient
-            if(self.layers[i-1].use_bias):
+            weight_gradient = np.matmul(grad_a, self.layers[i - 1].h.T)
+            if(self.layers[i].use_bias):
                 bias_gradient = grad_a
-                self.layers[i-1].bias -= bias_gradient
-            grad_h = self.layers[i-1].weights.T @ grad_a
+            grad_h = self.layers[i].weights.T @ grad_a
             grad_a = grad_h * \
                 np.array(
-                    map(self.layers[i-1].activation_deri_fn, self.layers[i-1].a)).T
-
+                    map(self.layers[i - 1].activation_deri_fn, self.layers[i - 1].a)).T
+            
+            if(self.layers[i].use_bias):
+                gradients.append((weight_gradient, bias_gradient))
+            else:
+                gradients.append((weight_gradient, None))
+        
+        gradients.reverse()
+        return gradients
+    
     def __forward(self, X):
         n_layers = len(self.layers)
         inp = X
@@ -263,7 +287,3 @@ class Sequential:
             inp = self.layers[i](inp)
         return inp
 
-    # function to find gradient with respect to the parameters, please pass all the parameters, you can later use the ones that are important
-    # def find_gradient(self, parameters, y):
-    #     # some preprocessing maybe needed
-    #     return self.__back_propagation(parameters, y)
