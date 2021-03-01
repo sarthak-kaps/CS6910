@@ -13,6 +13,8 @@ For each layer following requiremnts -
       ''
 '''
 
+layer_count = 0
+
 
 class Layer:
     """
@@ -20,6 +22,7 @@ class Layer:
     Child class must override build(), call(inputs) methods
     """
     built = False
+    name = None
 
     # Used for Backpropogation
     h = None  # Output of this layer
@@ -30,10 +33,10 @@ class Layer:
     input_dim = None
     output_dim = None
 
-    def __init__(self, input_dim=None):
+    def __init__(self, **kwargs):
         self.built = False
         self.fit = False
-        self.input_dim = input_dim
+        self.input_dim = kwargs.get("input_dim")
 
     def init_w_and_b(self):
         pass
@@ -45,7 +48,7 @@ class Layer:
         self.init_w_and_b()
         self.built = True
 
-    def call(self, inputs):
+    def __call__(self, inputs):
         self.h = inputs
         self.a = inputs
         return inputs
@@ -60,18 +63,24 @@ class Softmax(Layer):
         """Creates a Softmax layer.  After initialization the objects acts as a callable.
         Extra params are input_dim.
         """
-        super(Softmax, self).__init__(kwargs)
+        super(Softmax, self).__init__(**kwargs)
         self.output_dim = self.input_dim
+        self.name = "Softmax "
+        # layer_count += 1
 
-    def call(self, inputs):
+    def build(self):
+        self.output_dim = self.input_dim
+        self.built = True
+
+    def __call__(self, inputs):
         self.a = inputs
         self.h = extras.softmax(inputs)
         return self.h
 
-    def get_gradient(y) :
-        grad = np.zeros((len(a), 1))
+    def get_gradient(self, y):
+        grad = np.zeros(self.a.shape)
         grad[y] = 1   # assuming y is the true label
-        return grad - h   
+        return grad - self.h
 
 
 class Dense(Layer):
@@ -83,25 +92,26 @@ class Dense(Layer):
     biases = None
     activation_fn = None
 
-    def __init__(self, units: int, use_bias=True, activation="linear", weight_initializer='random', bias_initializer="random", **kwargs):
+    def __init__(self, units: int, activation="linear", weight_initializer='random', bias_initializer="random", **kwargs):
         """Creates a dense layer. After initialization the objects acts as a callable.
 
         Args:
             units (int): Number of neurons
             activation (str, optional): Choice of activation fuction. Choices are ["sigmoid","tanh","ReLU"]. Defaults to "sigmoid".
-            use_bias (bool, optional): Use bias?. Defaults to True.
+            # use_bias (bool, optional): Use bias?. Defaults to True.
             kernel_initializer (str, optional): Choice of kernel initializer. Choices are ["random","xavier"]. Defaults to "random".
             bias_initializer (str, optional): Choice of bias initializer. Choices are ["random","zero"]. Defaults to "random".
         """
-        super(Dense, self).__init__(kwargs)
-        self.use_bias = use_bias
+        super(Dense, self).__init__(**kwargs)
+        self.use_bias = True
         self.output_dim = units
         self.activation_fn = extras.activations.get(activation)
         self.activation_deri_fn = extras.activations_derivatives.get(
             activation)
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
-        return self
+        self.name = "Dense "
+        # layer_count += 1
 
     def init_w_and_b(self):
         self.init_biases()
@@ -118,10 +128,11 @@ class Dense(Layer):
         self.init_w_and_b()
         self.built = True
 
-    def call(self, inputs):
+    def __call__(self, inputs):
         """It is the main computation step.
         Requires input_dim match with the shape of inputs.
-        Also, output_dim must be set using the init method
+        Also, output_dim must be set using the init method.
+        Here, inputs is expected to be of size (d,1)
 
         Args:
             inputs ([type]): [description]
@@ -131,11 +142,15 @@ class Dense(Layer):
         """
         assert(self.built == True)
         assert(self.input_dim != None)
-        assert(self.input_dim == inputs.shape[1:])
+        # assert((self.input_dim,) == tuple(inputs.reshape(1, -1).shape[1:]))
         assert(self.output_dim != None)
         assert(self.activation_fn != None)
         assert(self.activation_deri_fn != None)
-        self.h = np.matmul(self.weights, inputs) + self.biases
+        # weights = (out, inp)
+        # inputs = (inp, n)
+        # bias = (out, 1)
+        # (out,n)
+        self.h = np.matmul(self.weights, inputs) + self.bias
         self.a = self.activation_fn(self.h)
         return self.a
 
@@ -168,25 +183,23 @@ class Dense(Layer):
             raise ValueError("Invalid bias initializer %s" %
                              (self.bias_initializer))
 
-        self.bias = bias_init_fn((self.output_dim,))
+        self.bias = bias_init_fn((self.output_dim, 1))
 
-    
     def get_gradient(self):
         pass  # not being implemented for now
-        
+
 
 class Sequential:
-    def __init__(self, layers: List[Layer] = None):
-        self.layers = List[Layer]
+    def __init__(self, layers=None):
+        self.layers = []
         if layers:
             if(layers[0].input_dim == None):
                 raise ValueError(
                     "Input dimension must be set for the first layer.")
             for layer in layers:
                 self.add(layer)
-        return self
 
-    def add(self, layer: Layer):
+    def add(self, layer):
         if layer.input_dim and (len(self.layers) == 0):
             self.input_dim = layer.input_dim
         elif layer.input_dim and (len(self.layers) != 0):
@@ -200,13 +213,24 @@ class Sequential:
 
         self.layers.append(layer)
 
-    def compile(self, optimizer='rmsprop', loss="mse", metrics: list = ["accuracy"]):
-        #self.optimizer = extras.optimizers.get(optimizer)
-        if optimizer == "SGD" :
-            self.optimizer = optimizers.SGD()  # pass appropriate parameters
-        if self.optimizer is None:
+    def compile(self, optimizer='rmsprop', loss="mse", metrics: list = ["accuracy"], **kwargs):
+        optimizer_fn = extras.optimizers.get(optimizer)
+        if optimizer == "SGD":
+            optimizer_fn = optimizer.SGD(kwargs)
+
+        self.compile(self, optimizer_fn, loss, metrics)
+
+    def compile(self, optimizer, loss="mse", metrics: list = ["accuracy"]):
+        # self.optimizer = extras.optimizers.get(optimizer)
+        # if optimizer == "SGD":
+        #     # pass appropriate parameters
+        #     self.optimizer = optimizers.SGD()
+        if optimizer is None:
             raise ValueError(
                 f"Optimizer {optimizer} not defined. Choices are {extras.optimizers.keys()}.")
+
+        self.optimizer = optimizer
+        # self.optimizer.compile((len(self.layers), ))
 
         self.loss = extras.metrics.get(loss)
         if self.loss is None:
@@ -222,81 +246,114 @@ class Sequential:
         for layer in self.layers:
             layer.build()
 
-    def fit(self, X, y, epochs=10, verbose=1, cold_start=False):
+    def fit(self, X, Y, epochs=10, verbose=1, cold_start=False):
         if not cold_start:
             for layer in self.layers:
                 layer.init_w_and_b()
 
+        eta = 0.1  # temporary
         for i in range(epochs):
+            outputs = []
+            w, b = self.__get_all_parameters()
 
-            # Later on we will change X and y to support mini batch and stochastic gradient descent
-            output = self.__forward(X)
-            gradients = self.__back_propagation(y)
-            
-            if((i+1) % verbose == 0):
-                y_pred = np.argmax(output, axis=-1)
-                print(f"Epoch {i+1}/{epochs} Loss : {self.loss(y, y_pred)}",
-                      ", ".join(list(map(lambda f: f(y, y_pred), self.metrics))))
+            weight_grads, bias_grads = [], []
+            for i in range(len(self.layers)-1):
+                weight_grads.append(np.zeros(w[i].shape))
+                bias_grads.append(np.zeros(b[i].shape))
 
-            
+            w, b = None, None
+            for x, y in zip(X, Y):
+                x = np.reshape(x, (-1, 1))
+                outputs.append(self.__forward(x))
+                # Later on we will change X and y to support mini batch and stochastic gradient descent
+                w, b = self.__back_propagation(y)
+                for i in range(0, len(w)):
+                    weight_grads[i] += w[i]
+                    bias_grads[i] += b[i]
+
             # Here a call will be made to the optimizer to update the parameters
-            new_parameters = self.optimizer.apply_gradients(gradients, self.__get_all_parameters())
-            
-            for i in range(0, len(new_parameter)):
-                self.layers[i].set_weights(new_parameter[i][0])
-                self.layers[i].set_bias(new_parameters[i][1])
+            # new_weights, new_bias = self.optimizer.apply_gradients(
+                # weight_grads, bias_grads, self.__get_all_parameters())
+
+            for i in range(0, len(self.layers)-1):
+                old_weights = self.layers[i].get_weights()
+                new_weights = old_weights - eta * weight_grads[i]
+                old_bias = self.layers[i].get_bias()
+                new_bias = old_bias - eta * bias_grads[i]
+                self.layers[i].set_weights(new_weights[i])
+                self.layers[i].set_bias(new_bias[i])
+
+            if((i+1) % verbose == 0):
+                y_pred = np.argmax(np.array(outputs), axis=-1)
+                print(f"Epoch {i+1}/{epochs} Loss : {self.loss(y, y_pred)}",
+                      ", ".join(list(map(lambda f: str(f(y, y_pred)), self.metrics))))
 
         for layer in self.layers:
             layer.flush_io()
 
     def evaluate(self, X, y):
-        output = self.__forward(X)
+        output = self.__forward(X.T)
         y_pred = np.argmax(output, axis=-1)
         return (self.loss(y, y_pred),) + tuple(map(lambda f: f(y, y_pred), self.metrics))
 
     def predict(self, X):
-        output = self.__forward(X)
+        output = self.__forward(X.T)
         return np.argmax(output, axis=-1)
 
     def predict_proba(self, X):
-        return self.__forward(X)
+        return self.__forward(X.T)
 
     # Mostly done (a bit confused about the matrix multiplications !)
     def __back_propagation(self, y):
         n_layers = len(self.layers)
         output_layer = self.layers[n_layers - 1]
         grad_a = output_layer.get_gradient(y)
-        
-        gradients = []
+        weight_grads, bias_grads = [], []
         # the ith index of the gradients vector will contain the gradient with respect to weight, bias for the ith layer, stored as (grad(weight), grad(bias))
-        
-        for i in range(n_layers - 1, 0, -1):
+        for i in range(n_layers - 2, -1, -1):
+            # print(self.layers[i].name)
             # .h is the hidden layer output
-            weight_gradient = np.matmul(grad_a, self.layers[i - 1].h.T)
+            # ak = bk + Wk * hk -1
+            # a = (d,1)
+            # h = (k,1)
+            if i > 0:
+                weight_gradient = np.matmul(grad_a, self.layers[i - 1].h.T)
+            else:
+                weight_gradient = np.matmul(
+                    grad_a, np.ones((1, self.layers[i].input_dim)))
             if(self.layers[i].use_bias):
                 bias_gradient = grad_a
+
+            # grad_h = (k,1)
+            # grad_a = (k,1)
             grad_h = self.layers[i].weights.T @ grad_a
-            grad_a = grad_h * \
-                np.array(
-                    map(self.layers[i - 1].activation_deri_fn, self.layers[i - 1].a)).T
-            
+            if i > 0:
+                t = np.array(list(
+                    map(self.layers[i - 1].activation_deri_fn, self.layers[i - 1].a)))
+                grad_a = grad_h * t
+
+            weight_grads.append(weight_gradient)
             if(self.layers[i].use_bias):
-                gradients.append((weight_gradient, bias_gradient))
+                bias_grads.append(bias_gradient)
             else:
-                gradients.append((weight_gradient, None))
-        
-        gradients.reverse()
-        return np.array(gradients)
-    
+                bias_grads.append(None)
+
+        weight_grads.reverse()
+        bias_grads.reverse()
+
+        return (weight_grads, bias_grads)
+
     def __forward(self, X):
         n_layers = len(self.layers)
         inp = X
-        for i in range(0, n_layers-1):
+        for i in range(0, n_layers):
             inp = self.layers[i](inp)
         return inp
 
-    def __get_all_parameters(self) :
-        parameters = []
-        for i in range(0, len(self.layers)):
-            parameters.append((self.layers[i].get_weights(), self.layers[i].get_bias()))
-        return np.array(parameters)
+    def __get_all_parameters(self):
+        weights = []
+        biases = []
+        for i in range(0, len(self.layers)-1):
+            weights.append(self.layers[i].get_weights())
+            biases.append(self.layers[i].get_bias())
+        return (weights, biases)

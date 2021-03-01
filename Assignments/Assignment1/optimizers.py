@@ -12,38 +12,48 @@ class Optimizer:
     def apply_gradients(self, gradients, weights):
         pass
 
+
 class SGD(Optimizer):
     nesterov = False
     momentum = None
-    velocity = None
+    weight_velocity = None
+    bias_velocity = None
 
-    def __init__(self, parameters, learning_rate = None, momentum = 0, nesterov = False):
-        if learning_rate is None:
-            super(SGD, Optimizer).__init__(0.1)
-        else: 
-            self.learning_rate = learning_rate
-        
+    def __init__(self, learning_rate=0.1, momentum=0, nesterov=False):
+        super(SGD, self).__init__(learning_rate)
+
         self.nesterov = nesterov
         self.momentum = momentum
-        
-        if momentum is not None and (momentum > 1 or momentum < 0) :
-            raise ValueError("Error : Momentum must lie between 0 and 1 both inclusive")
-        
-        self.velocity = np.zeros((parameters.shape))
 
-    def apply_gradients(self, gradients, parameters):
-        new_parameters = parameters
+        if momentum is not None and (momentum > 1 or momentum < 0):
+            raise ValueError(
+                "Error : Momentum must lie between 0 and 1 both inclusive")
 
-        assert(gradients.shape == parameters.shape and parameters.shape == self.velocity.shape)
+    def compile(self, weight_shape, bias_shape):
+        self.weight_velocity = np.zeros(weight_shape)
+        self.bias_velocity = np.zeros(bias_shape)
 
-        for i in range(0, len(parameters)):
-            for j in range(0, len(parameters[i])):
-                if nesterov:
-                    self.velocity[i][j] = self.momentum * self.velocity[i][j] - self.learning_rate * gradients[i][j]
-                    new_parameters[i][j] = parameters[i][j] + self.momentum * self.velocity[i][j] - self.learning_rate * gradients[i][j]
-                else:
-                    self.velocity[i][j] = self.momentum * self.velocity[i][j] - self.learning_rate * gradients[i][j]
-                    new_parameters[i][j] = parameters[i][j] + self.velocity[i][j]
+    def apply_gradients(self, weight_gradients, bias_gradients, weights, bias):
+        new_weights = weights
+        new_bias = bias
+        assert(weight_gradients.shape == self.weight_velocity.shape)
+        assert(bias_gradients.shape == self.bias_velocity.shape)
 
-        return new_parameters
+        if self.nesterov:
+            self.weight_velocity = self.momentum * self.weight_velocity - \
+                self.learning_rate * weight_gradients
+            new_weights = weights + self.momentum * \
+                self.weight_velocity - self.learning_rate * weight_gradients
+            self.bias_velocity = self.momentum * self.bias_velocity - \
+                self.learning_rate * bias_gradients
+            new_bias = bias + self.momentum * self.bias_velocity - \
+                self.learning_rate * bias_gradients
+        else:
+            self.weight_velocity = self.momentum * self.weight_velocity - \
+                self.learning_rate * weight_gradients
+            new_weights = weights + self.weight_velocity
+            self.bias_velocity = self.momentum * self.bias_velocity - \
+                self.learning_rate * bias_gradients
+            new_bias = bias + self.bias_velocity
 
+        return (new_weights, new_bias)
