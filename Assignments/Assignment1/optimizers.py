@@ -33,27 +33,27 @@ class SGD(Optimizer):
         self.weight_velocity = np.zeros(weight_shape)
         self.bias_velocity = np.zeros(bias_shape)
 
-    def apply_gradients(self, weight_gradients, bias_gradients, weights, bias):
-        new_weights = weights
+    def apply_gradients(self, weight_gradient, bias_gradient, weight, bias):
+        new_weight = weight
         new_bias = bias
         assert(weight_gradients.shape == self.weight_velocity.shape)
         assert(bias_gradients.shape == self.bias_velocity.shape)
 
         if self.nesterov:
             self.weight_velocity = self.momentum * self.weight_velocity - \
-                self.learning_rate * weight_gradients
-            new_weights = weights + self.momentum * \
+                self.learning_rate * weight_gradient
+            new_weight = weight + self.momentum * \
                 self.weight_velocity - self.learning_rate * weight_gradients
             self.bias_velocity = self.momentum * self.bias_velocity - \
-                self.learning_rate * bias_gradients
+                self.learning_rate * bias_gradient
             new_bias = bias + self.momentum * self.bias_velocity - \
-                self.learning_rate * bias_gradients
+                self.learning_rate * bias_gradient
         else:
             self.weight_velocity = self.momentum * self.weight_velocity - \
-                self.learning_rate * weight_gradients
-            new_weights = weights + self.weight_velocity
+                self.learning_rate * weight_gradient
+            new_weights = weight + self.weight_velocity
             self.bias_velocity = self.momentum * self.bias_velocity - \
-                self.learning_rate * bias_gradients
+                self.learning_rate * bias_gradient
             new_bias = bias + self.bias_velocity
 
         return (new_weights, new_bias)

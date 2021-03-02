@@ -229,8 +229,6 @@ class Sequential:
             raise ValueError(
                 f"Optimizer {optimizer} not defined. Choices are {extras.optimizers.keys()}.")
 
-        self.optimizer = optimizer
-        # self.optimizer.compile((len(self.layers), ))
 
         self.loss = extras.metrics.get(loss)
         if self.loss is None:
@@ -246,21 +244,28 @@ class Sequential:
         for layer in self.layers:
             layer.build()
 
-    def fit(self, X, Y, epochs=10, verbose=1, cold_start=False):
+        self.optimizers = []
+        # self.optimizer.compile((len(self.layers), ))
+        for i in range(0, len(self.layers) - 1) :
+            self.optimizers.append(optimizer)
+            self.optimizers[i].compile(self.layers[i].get_weights().shape, self.layers[i].get_bias().shape)
+    
+    def fit(self, X, Y, epochs=100, verbose=1, cold_start=False):
         if not cold_start:
             for layer in self.layers:
                 layer.init_w_and_b()
 
         eta = 0.1  # temporary
-        for i in range(epochs):
+        for ep in range(epochs):
             outputs = []
             w, b = self.__get_all_parameters()
 
             weight_grads, bias_grads = [], []
             for i in range(len(self.layers)-1):
+                print(w[i].shape, end = " ")
                 weight_grads.append(np.zeros(w[i].shape))
                 bias_grads.append(np.zeros(b[i].shape))
-
+            print()
             w, b = None, None
             for x, y in zip(X, Y):
                 x = np.reshape(x, (-1, 1))
@@ -280,22 +285,33 @@ class Sequential:
                 new_weights = old_weights - eta * weight_grads[i]
                 old_bias = self.layers[i].get_bias()
                 new_bias = old_bias - eta * bias_grads[i]
-                self.layers[i].set_weights(new_weights[i])
-                self.layers[i].set_bias(new_bias[i])
-
-            if((i+1) % verbose == 0):
+                self.layers[i].set_weights(new_weights)
+                self.layers[i].set_bias(new_bias)
+            
+            if((ep+1) % verbose == 0):
                 y_pred = np.argmax(np.array(outputs), axis=-1)
-                print(f"Epoch {i+1}/{epochs} Loss : {self.loss(y, y_pred)}",
+                print(f"Epoch {ep+1}/{epochs} Loss : {self.loss(y, y_pred)}",
                       ", ".join(list(map(lambda f: str(f(y, y_pred)), self.metrics))))
-
+            
         for layer in self.layers:
             layer.flush_io()
 
     def evaluate(self, X, y):
-        output = self.__forward(X.T)
-        y_pred = np.argmax(output, axis=-1)
-        return (self.loss(y, y_pred),) + tuple(map(lambda f: f(y, y_pred), self.metrics))
-
+        output = []
+        for x in X:
+            x = np.reshape(x, (-1, 1))
+            output.append(self.__forward(x))
+        #print(output)
+        y_pred = np.argmax(output, axis=1)
+        # return (self.loss(y, y_pred),) + tuple(map(lambda f: f(y, y_pred), self.metrics))
+        #print(self.loss(y, y_pred),) + tuple(map(lambda f: f(y, y_pred), self.metrics))
+        cnt, nan_cnt = 0, 0
+        for i in range(0, len(y)) :
+            if y[i] != y_pred[i] :
+                cnt += 1
+            if y_pred[i] == np.nan :
+                nan_cnt += 1
+        print(cnt / len(X), nan_cnt / len(X))
     def predict(self, X):
         output = self.__forward(X.T)
         return np.argmax(output, axis=-1)
@@ -332,6 +348,7 @@ class Sequential:
                     map(self.layers[i - 1].activation_deri_fn, self.layers[i - 1].a)))
                 grad_a = grad_h * t
 
+            #print(weight_gradient.shape, bias_gradient.shape) 
             weight_grads.append(weight_gradient)
             if(self.layers[i].use_bias):
                 bias_grads.append(bias_gradient)
