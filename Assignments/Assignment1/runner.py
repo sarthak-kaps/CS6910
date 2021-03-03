@@ -11,8 +11,8 @@ model.add(models.Dense(20, input_dim=10))
 model.add(models.Dense(2))
 model.add(models.Softmax())
 
-opt = optimizers.SGD()
+opt = optimizers.Nadam()
 model.compile(opt)
 
-model.fit(X, y)
+model.fit(X, y, epochs = 1000, verbose = 100)
 model.evaluate(X, y)

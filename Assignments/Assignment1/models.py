@@ -2,7 +2,7 @@ import numpy as np
 from typing import List
 import extras
 import optimizers
-
+import copy
 
 '''
 Implementation of class Softmax needed for output layer
@@ -247,7 +247,7 @@ class Sequential:
         self.optimizers = []
         # self.optimizer.compile((len(self.layers), ))
         for i in range(0, len(self.layers) - 1) :
-            self.optimizers.append(optimizer)
+            self.optimizers.append(copy.copy(optimizer))
             self.optimizers[i].compile(self.layers[i].get_weights().shape, self.layers[i].get_bias().shape)
     
     def fit(self, X, Y, epochs=100, verbose=1, cold_start=False):
@@ -282,9 +282,8 @@ class Sequential:
 
             for i in range(0, len(self.layers)-1):
                 old_weights = self.layers[i].get_weights()
-                new_weights = old_weights - eta * weight_grads[i]
                 old_bias = self.layers[i].get_bias()
-                new_bias = old_bias - eta * bias_grads[i]
+                new_weights, new_bias = self.optimizers[i].apply_gradients(weight_grads[i], bias_grads[i], old_weights, old_bias, ep + 1)
                 self.layers[i].set_weights(new_weights)
                 self.layers[i].set_bias(new_bias)
             
