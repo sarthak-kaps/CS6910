@@ -77,7 +77,7 @@ class Softmax(Layer):
     def get_gradient(self, y):
         grad = np.zeros(self.a.shape)
         grad[y] = 1   # assuming y is the true label
-        return grad - self.h
+        return -(grad - self.h)
 
 
 class Dense(Layer):
@@ -149,9 +149,9 @@ class Dense(Layer):
         # inputs = (inp, n)
         # bias = (out, 1)
         # (out,n)
-        self.h = np.matmul(self.weights, inputs) + self.bias
-        self.a = self.activation_fn(self.h)
-        return self.a
+        self.a = np.matmul(self.weights, inputs) + self.bias
+        self.h = self.activation_fn(self.a)
+        return self.h
 
     def set_weights(self, weights: np.ndarray):
         self.weights = weights
@@ -271,7 +271,7 @@ class Sequential:
                 x = np.reshape(x, (-1, 1))
                 outputs.append(self.__forward(x))
                 # Later on we will change X and y to support mini batch and stochastic gradient descent
-                w, b = self.__back_propagation(y)
+                w, b = self.__back_propagation(x, y)
                 for i in range(0, len(w)):
                     weight_grads[i] += w[i]
                     bias_grads[i] += b[i]
@@ -306,7 +306,7 @@ class Sequential:
         return self.__forward(X.T)
 
     # Mostly done (a bit confused about the matrix multiplications !)
-    def __back_propagation(self, y):
+    def __back_propagation(self, X, y):
         n_layers = len(self.layers)
         output_layer = self.layers[n_layers - 1]
         grad_a = output_layer.get_gradient(y)
@@ -321,8 +321,10 @@ class Sequential:
             if i > 0:
                 weight_gradient = np.matmul(grad_a, self.layers[i - 1].h.T)
             else:
+                # weight_gradient = np.matmul(
+                #   grad_a, np.ones((1, self.layers[i].input_dim)))
                 weight_gradient = np.matmul(
-                    grad_a, np.ones((1, self.layers[i].input_dim)))
+                    grad_a, X.T)
             if(self.layers[i].use_bias):
                 bias_gradient = grad_a
 
