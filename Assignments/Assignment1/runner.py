@@ -1,13 +1,19 @@
 import models
 import optimizers
 import numpy as np
+import wandb
+from sklearn.model_selection import train_test_split
+
+wandb.init(project="trial")
 
 np.random.seed(0)
-X = np.random.random((1000, 10)) - 0.5
+X = np.random.random((10000, 10)) - 0.5
 t = np.sum(X, axis=-1)
 y = (t > 0) * 1
 
-print(((np.count_nonzero(y)/len(y)))*100)
+train_x, val_x, train_y, val_y = train_test_split(
+    X, y, test_size=0.1, random_state=0)
+
 
 model = models.Sequential()
 model.add(models.Dense(20, activation="sigmoid", input_dim=10))
@@ -15,12 +21,17 @@ model.add(models.Dense(20, activation="sigmoid"))
 model.add(models.Dense(2, activation="sigmoid"))
 model.add(models.Softmax())
 
+wandb.config.learnning_rate = 0.1
+
 opt = optimizers.Adam(learning_rate=0.1)
 model.compile(opt)
 
-model.fit(X, y, epochs=200, verbose=10)
-model.evaluate(X, y)
-
+for i in range(20):
+    model.fit(train_x, train_y, epochs=10, verbose=10, cold_start=True)
+    train_loss, train_acc = model.evaluate(train_x, train_y)
+    val_loss, val_acc = model.evaluate(val_x, val_y)
+    wandb.log({"epoch": i*10, "train_loss": train_loss, "train_accuracy": train_acc,
+               "val_loss": val_loss, "val_accuracy": val_acc})
 
 """
 X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
