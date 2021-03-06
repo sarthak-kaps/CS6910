@@ -15,7 +15,7 @@ model.add(models.Dense(20, activation="sigmoid"))
 model.add(models.Dense(2, activation="sigmoid"))
 model.add(models.Softmax())
 
-opt = optimizers.Adam(learning_rate=0.1)
+opt = optimizers.Adam(learning_rate=0.01)
 model.compile(opt)
 
 model.fit(X, y, epochs=200, verbose=10)
