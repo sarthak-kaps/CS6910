@@ -33,7 +33,7 @@ metrics = {"mse": mse, "accuracy": accuracy, "cross_entropy": cross_entropy}
 
 
 def sigmoid(x):
-    return 1/(1+np.exp(-x))
+    return 1/(1+np.exp(-np.clip(x, -50, 50)))
 
 
 def sigmoid_derivative(x):
@@ -41,7 +41,8 @@ def sigmoid_derivative(x):
 
 
 def tanh(x):
-    return (np.exp(x) - np.exp(-x))/(np.exp(x) + np.exp(-x))
+    t = np.clip(x, -50, 50)
+    return (np.exp(t) - np.exp(-t))/(np.exp(t) + np.exp(-t))
 
 
 def tanh_derivative(x):
@@ -59,7 +60,7 @@ def linear_derivative(x): return 1
 
 
 def softmax(x):
-    t = np.exp(x)
+    t = np.exp(np.clip(x, -50, 50))
     return t/(np.sum(t, axis=0))
 
 
