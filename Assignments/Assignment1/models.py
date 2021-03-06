@@ -306,8 +306,9 @@ class Sequential:
             if((ep+1) % verbose == 0):
                 print(self.print_str % ((ep+1, epochs,) + self.evaluate(X, Y)))
 
-        for layer in self.layers:
-            layer.flush_io()
+        if not cold_start:
+            for layer in self.layers:
+                layer.flush_io()
 
     def evaluate(self, X, y):
         output = []
