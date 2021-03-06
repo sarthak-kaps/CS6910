@@ -88,8 +88,9 @@ class Dense(Layer):
     weights = None
     biases = None
     activation_fn = None
+    l2 = None   
 
-    def __init__(self, units: int, activation="linear", weight_initializer='random', bias_initializer="random", **kwargs):
+    def __init__(self, units: int, activation="linear", weight_initializer='random', bias_initializer="random", l2 = 0, **kwargs):
         """Creates a dense layer. After initialization the objects acts as a callable.
 
         Args:
@@ -98,6 +99,7 @@ class Dense(Layer):
             # use_bias (bool, optional): Use bias?. Defaults to True.
             kernel_initializer (str, optional): Choice of kernel initializer. Choices are ["random","xavier"]. Defaults to "random".
             bias_initializer (str, optional): Choice of bias initializer. Choices are ["random","zero"]. Defaults to "random".
+            l2 = L2 regularization parameter, default 0
         """
         super(Dense, self).__init__(**kwargs)
         self.use_bias = True
@@ -111,6 +113,9 @@ class Dense(Layer):
             return None
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
+        self.name = "Dense "
+        self.l2 = l2
+        # layer_count += 1
 
     def init_w_and_b(self):
         self.init_biases()
@@ -249,13 +254,17 @@ class Sequential:
 
         for i in range(0, len(self.layers) - 1):
             self.optimizers.append(copy.copy(optimizer))
-            self.optimizers[i].compile(
-                self.layers[i].get_weights().shape, self.layers[i].get_bias().shape)
+            self.optimizers[i].compile(self.layers[i].get_weights().shape, self.layers[i].get_bias().shape)
+    
 
-    def fit(self, X, Y, epochs=100, verbose=1, cold_start=False):
+    def fit(self, X, Y, epochs=100, verbose=1, batch_size = -1, cold_start=False):
         if not cold_start:
             for layer in self.layers:
                 layer.init_w_and_b()
+        
+        if batch_size == -1 :
+            batch_size = len(X)
+
 
         for ep in range(epochs):
             outputs = []
@@ -265,24 +274,34 @@ class Sequential:
             for i in range(len(self.layers)-1):
                 weight_grads.append(np.zeros(w[i].shape))
                 bias_grads.append(np.zeros(b[i].shape))
+            
+            range_start = 0
+            range_end = batch_size
 
-            w, b = None, None
-            for x, y in zip(X, Y):
-                x = np.reshape(x, (-1, 1))
-                outputs.append(self.__forward(x))
-                # Later on we will change X and y to support mini batch and stochastic gradient descent
-                w, b = self.__back_propagation(x, y)
-                for i in range(0, len(w)):
-                    weight_grads[i] += w[i]
-                    bias_grads[i] += b[i]
+            while range_start < batch_size :
+                X_batch = X[range_start : range_end]
+                Y_batch = Y[range_start : range_end]
+                w, b = None, None
+                for x, y in zip(X_batch, Y_batch):
+                    x = np.reshape(x, (-1, 1))
+                    outputs.append(self.__forward(x))
+                    # Later on we will change X and y to support mini batch and stochastic gradient descent
+                    w, b = self.__back_propagation(x, y)
+                    for i in range(0, len(w)):
+                        weight_grads[i] += w[i]
+                        bias_grads[i] += b[i]
 
-            for i in range(0, len(self.layers)-1):
-                old_weights = self.layers[i].get_weights()
-                old_bias = self.layers[i].get_bias()
-                new_weights, new_bias = self.optimizers[i].apply_gradients(
-                    weight_grads[i], bias_grads[i], old_weights, old_bias, ep + 1)
-                self.layers[i].set_weights(new_weights)
-                self.layers[i].set_bias(new_bias)
+                for i in range(0, len(self.layers)-1):
+                    old_weights = self.layers[i].get_weights()
+                    old_bias = self.layers[i].get_bias()
+                    new_weights, new_bias = self.optimizers[i].apply_gradients(
+                        weight_grads[i], bias_grads[i], old_weights, old_bias, ep + 1)
+                    self.layers[i].set_weights(new_weights)
+                    self.layers[i].set_bias(new_bias)
+                
+                range_start += batch_size
+                range_end += batch_size
+                range_end = min(range_end, len(X))
 
             if((ep+1) % verbose == 0):
                 print(self.print_str % ((ep+1, epochs,) + self.evaluate(X, Y)))
@@ -336,6 +355,13 @@ class Sequential:
                 t = np.array(list(
                     map(self.layers[i - 1].activation_deri_fn, self.layers[i - 1].a)))
                 grad_a = grad_h * t
+
+            #print(weight_gradient.shape, bias_gradient.shape) 
+            
+            weight_gradient = weight_gradient + self.layers[i].l2 * self.layers[i].weights
+            
+            if self.layers[i].use_bias:
+                bias_gradient = bias_gradient + self.layers[i].l2 * self.layers[i].bias
 
             #print(weight_gradient.shape, bias_gradient.shape)
             weight_grads.append(weight_gradient)
