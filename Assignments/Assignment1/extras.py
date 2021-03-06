@@ -50,11 +50,11 @@ def tanh_derivative(x):
 
 
 def ReLU(x):
-    return np.array(map(lambda a: max(0, a), x))
+    return np.array(list(map(lambda a: np.maximum(0, a), x)))
 
 
 def ReLU_derivative(x):
-    return np.array(map(lambda a: 1 if a > 0 else 0), x)
+    return np.array(list(map(lambda a: 1 if a > 0 else 0, x)))
 
 
 def linear(x): return x
