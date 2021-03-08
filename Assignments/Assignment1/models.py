@@ -270,15 +270,15 @@ class Sequential:
             outputs = []
             w, b = self.__get_all_parameters()
 
-            weight_grads, bias_grads = [], []
-            for i in range(len(self.layers)-1):
-                weight_grads.append(np.zeros(w[i].shape))
-                bias_grads.append(np.zeros(b[i].shape))
             
             range_start = 0
             range_end = batch_size
 
             while range_start < batch_size :
+                weight_grads, bias_grads = [], []
+                for i in range(len(self.layers)-1):
+                    weight_grads.append(np.zeros(w[i].shape))
+                    bias_grads.append(np.zeros(b[i].shape))
                 X_batch = X[range_start : range_end]
                 Y_batch = Y[range_start : range_end]
                 w, b = None, None
