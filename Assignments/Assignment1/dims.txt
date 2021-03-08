@@ -1,0 +1,38 @@
+X = (n, 10)
+y = (n, 1)
+
+
+NN :
+X = (n,10)
+	(20)
+	(20)
+	(2)
+	
+	
+1st layer:
+	X = (10,n)
+	weights = (20, 10)
+	bias = (20, 1)
+	a = (20,n)
+	h = (20,n)
+	
+2nd layer:
+	X = (20,n)
+	weights = (20,20)
+	bias = (20,1)
+	a = (20,n)
+	h = (20,n)
+	
+3rd layer:
+	X = (20,n)
+	weights = (2, 20)
+	bias = (2, 1)
+	a = (2,n)
+	h = (2,n)
+	
+Softmax layer:
+	X = (2,n)
+	a = (2,n)
+	h = (2,n)
+
+
