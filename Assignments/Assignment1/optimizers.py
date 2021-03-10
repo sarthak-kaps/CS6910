@@ -16,20 +16,11 @@ class Optimizer:
 
 
 class SGD(Optimizer):
-    nesterov = False
-    momentum = None
     weight_velocity = None
     bias_velocity = None
 
-    def __init__(self, learning_rate=0.01, momentum=0, nesterov=False):
+    def __init__(self, learning_rate=0.01):
         super(SGD, self).__init__(learning_rate)
-
-        self.nesterov = nesterov
-        self.momentum = momentum
-
-        if momentum is not None and (momentum > 1 or momentum < 0):
-            raise ValueError(
-                "Error : Momentum must lie between 0 and 1 both inclusive")
 
     def compile(self, weight_shape, bias_shape):
         self.weight_velocity = np.zeros(weight_shape)
@@ -41,26 +32,64 @@ class SGD(Optimizer):
         assert(weight_gradient.shape == self.weight_velocity.shape)
         assert(bias_gradient.shape == self.bias_velocity.shape)
 
-        if self.nesterov:
-            self.weight_velocity = self.momentum * self.weight_velocity - \
-                self.learning_rate * weight_gradient
-            new_weight = weight + self.momentum * \
-                self.weight_velocity - self.learning_rate * weight_gradient
-            self.bias_velocity = self.momentum * self.bias_velocity - \
-                self.learning_rate * bias_gradient
-            new_bias = bias + self.momentum * self.bias_velocity - \
-                self.learning_rate * bias_gradient
-        else:
-            self.weight_velocity = self.momentum * self.weight_velocity - \
-                self.learning_rate * weight_gradient
-            new_weight = weight + self.weight_velocity
-            self.bias_velocity = self.momentum * self.bias_velocity - \
-                self.learning_rate * bias_gradient
-            new_bias = bias + self.bias_velocity
+        self.weight_velocity = -self.learning_rate * weight_gradient
+        new_weight = weight + self.weight_velocity
+        self.bias_velocity = -self.learning_rate * bias_gradient
+        new_bias = bias + self.bias_velocity
 
         return (new_weight, new_bias)
 
 # Implements RMS propogation Gradient Descent
+
+
+class Nesterov(SGD):
+    def __init__(self, learning_rate=0.01, momentum=0.1):
+        super(Nesterov, self).__init__(learning_rate)
+        self.momentum = momentum
+        if momentum is not None and (momentum > 1 or momentum < 0):
+            raise ValueError(
+                "Error : Momentum must lie between 0 and 1 both inclusive")
+
+    def apply_gradients(self, weight_gradient, bias_gradient, weight, bias, epoch):
+        new_weight = weight
+        new_bias = bias
+        assert(weight_gradient.shape == self.weight_velocity.shape)
+        assert(bias_gradient.shape == self.bias_velocity.shape)
+
+        self.weight_velocity = self.momentum * self.weight_velocity - \
+            self.learning_rate * weight_gradient
+        new_weight = weight + self.momentum * \
+            self.weight_velocity - self.learning_rate * weight_gradient
+        self.bias_velocity = self.momentum * self.bias_velocity - \
+            self.learning_rate * bias_gradient
+        new_bias = bias + self.momentum * self.bias_velocity - \
+            self.learning_rate * bias_gradient
+
+        return (new_weight, new_bias)
+
+
+class Momentum(SGD):
+    def __init__(self, learning_rate=0.01, momentum=0.1):
+        super().__init__(learning_rate=learning_rate)
+        self.momentum = momentum
+        if momentum is not None and (momentum > 1 or momentum < 0):
+            raise ValueError(
+                "Error : Momentum must lie between 0 and 1 both inclusive")
+
+    def apply_gradients(self, weight_gradient, bias_gradient, weight, bias, epoch):
+        new_weight = weight
+        new_bias = bias
+        assert(weight_gradient.shape == self.weight_velocity.shape)
+        assert(bias_gradient.shape == self.bias_velocity.shape)
+
+        self.weight_velocity = self.momentum*self.weight_velocity - \
+            self.learning_rate * weight_gradient
+        new_weight = weight + self.weight_velocity
+        self.bias_velocity = self.momentum*self.bias_velocity - \
+            self.learning_rate * bias_gradient
+        new_bias = bias + self.bias_velocity
+
+        return (new_weight, new_bias)
 
 
 class RMSprop(Optimizer):
@@ -213,3 +242,12 @@ class Nadam(Optimizer):
             (bias_momentum_hat_nu + bias_gradient_nu)
 
         return (new_weight, new_bias)
+
+
+optimizers = {"sgd": SGD,
+              "momentum": Momentum,
+              "nesterov": Nesterov,
+              "adam": Adam,
+              "rmsprop": RMSprop,
+              "nadam": Nadam,
+              }
