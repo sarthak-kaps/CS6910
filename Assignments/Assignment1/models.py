@@ -269,14 +269,14 @@ class Sequential:
 
         ts = 1
         for ep in range(epochs):
-<<<<<<< HEAD
             outputs = []
-            w, b = self.__get_all_parameters()
+            #w, b = self.__get_all_parameters()
 
             
             range_start = 0
             range_end = batch_size
 
+            """
             while range_start < batch_size :
                 weight_grads, bias_grads = [], []
                 for i in range(len(self.layers)-1):
@@ -293,10 +293,9 @@ class Sequential:
                     for i in range(0, len(w)):
                         weight_grads[i] += w[i]
                         bias_grads[i] += b[i]
-=======
             range_start = 0
             range_end = batch_size
-
+            """
             while range_start < batch_size:
 
                 X_batch = X[range_start: range_end]
@@ -306,7 +305,6 @@ class Sequential:
                 y = Y_batch.T
                 _ = self.__forward(x)
                 w, b = self.__back_propagation(x, y)
->>>>>>> e15d79ab99bee1b7f0f56a3123d313e3ada44141
 
                 for i in range(0, len(self.layers)-1):
                     self.layers[i].weights, self.layers[i].bias = self.optimizers[i].apply_gradients(
