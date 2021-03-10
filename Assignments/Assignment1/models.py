@@ -219,14 +219,7 @@ class Sequential:
 
         self.layers.append(layer)
 
-    def compile(self, optimizer='rmsprop', loss="mse", metrics: list = ["accuracy"], **kwargs):
-        optimizer_fn = extras.optimizers.get(optimizer)
-        if optimizer == "SGD":
-            optimizer_fn = optimizer.SGD(kwargs)
-
-        self.compile(self, optimizer_fn, loss, metrics)
-
-    def compile(self, optimizer, loss="mse", metrics: list = ["accuracy"]):
+    def compile(self, optimizer, loss="cross_entropy", metrics: list = ["accuracy"]):
         # self.optimizer = extras.optimizers.get(optimizer)
         # if optimizer == "SGD":
         #     # pass appropriate parameters
@@ -259,7 +252,20 @@ class Sequential:
             self.optimizers[i].compile(
                 self.layers[i].get_weights().shape, self.layers[i].get_bias().shape)
 
-    def fit(self, X, Y, epochs=100, verbose=1, batch_size=-1, cold_start=False):
+    def fit(self, X, Y, Xval=None, Yval=None, epochs=100, verbose=1, batch_size=-1, cold_start=False, callback_fn=None):
+        """Fits the neural network on dataset X and y
+
+        Args:
+            X (np.ndarray): Training inputs
+            Y (np.ndarray): Training labels
+            epochs (int, optional): Number of epochs to train on. Defaults to 100.
+            verbose (int, optional): Verbosity for printing the results. Defaults to 1.
+            batch_size (int, optional): Processes batch_size inputs together. Defaults to -1.
+            cold_start (bool, optional): If set to true, it uses the previously trained weights. Defaults to False.
+            callback_fn (function, optional): A callback function which must take (epochs, train_metrics,val_metrics) as inputs. Defaults to None.
+                            train_metrics and val_metrics will be passed as tupple.
+                            Ex: (loss, metrics1, metrics2, ...)
+        """
         if not cold_start:
             for layer in self.layers:
                 layer.init_w_and_b()
@@ -291,14 +297,15 @@ class Sequential:
                 range_end += batch_size
                 range_end = min(range_end, len(X))
 
-                # print(w[1], b[1])
-
-            # for i, layer in enumerate(self.layers):
-                # if(i == 1):
-                # print(layer.weights)
-
             if((ep+1) % verbose == 0):
-                print(self.print_str % ((ep+1, epochs,) + self.evaluate(X, Y)))
+                train_results = self.evaluate(X, Y)
+                if Xval is not None and Yval is not None:
+                    val_results = self.evaluate(Xval, Yval)
+                else:
+                    val_results = None
+                if(callback_fn != None):
+                    callback_fn(ep+1, train_results, val_results)
+                print(self.print_str % ((ep+1, epochs,) + train_results))
 
         if not cold_start:
             for layer in self.layers:
@@ -306,9 +313,8 @@ class Sequential:
 
     def evaluate(self, X, y):
         output = self.__forward(X.T).T
-        # print(output[:10])
         y_pred = np.argmax(output, axis=-1)
-        return (self.loss(y, y_pred),) + tuple(map(lambda f: f(y, y_pred), self.metrics))
+        return (self.loss(y, y_pred, output),) + tuple(map(lambda f: f(y, y_pred, output), self.metrics))
 
     def predict(self, X):
         output = self.__forward(X.T).T
