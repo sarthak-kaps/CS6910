@@ -4,27 +4,28 @@ import math
 # Metrics and Loss Functions
 
 
-def mse(y_true, y_pred):
-    return np.mean((y_true - y_pred)**2)
+def mse(y_true, y_classes, y_probab):
+    return np.mean((y_true - y_classes)**2)
 
 
-def accuracy(y_true, y_pred):
-    return np.mean(y_true == y_pred)
+def accuracy(y_true, y_classes, y_probab):
+    return np.mean(y_true == y_classes)
 
 
 '''
 Assume classes are 0 to k - 1
 y_true -> list of classes in the training data
-y_pred -> list that contains the class probability prediction for each of the k class for the input data
+y_classes -> list that contains the predicted classes
+y_probab -> list that contains the class probability prediction for each of the k class for the input data
 class probabilities are zero indexed
 '''
 
 
-def cross_entropy(y_true, y_pred):
+def cross_entropy(y_true, y_classes, y_probab):
     c_e = 0
     for i in range(0, len(y_true)):
-        c_e += np.log(y_pred[i][y_true[i]])
-    return c_e / len(y_true)
+        c_e += np.log(y_probab[i][y_true[i]])
+    return -(c_e / len(y_true))
 
 
 metrics = {"mse": mse, "accuracy": accuracy, "cross_entropy": cross_entropy}
@@ -87,7 +88,7 @@ def zeros(shape): return np.zeros(shape)
 
 
 def xavier(shape): return np.random.normal(
-    scale=math.sqrt(2/np.sum(shape)))
+    scale=math.sqrt(2/np.sum(shape)), size=shape)
 
 
 initializers = {"random": random, "zeros": zeros, "xavier": xavier}
