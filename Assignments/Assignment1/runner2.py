@@ -13,14 +13,14 @@ test_x = np.reshape(test_x, (-1, 784))/255.0
 
 model = models.Sequential()
 model.add(models.Dense(128, activation="ReLU", input_dim=784))
-# model.add(models.Dense(32, activation="sigmoid"))
+#model.add(models.Dense(128, activation="ReLU"))
 model.add(models.Dense(10, activation="ReLU"))
 model.add(models.Softmax())
 
 opt = optimizers.Adam(0.5)
-model.compile(opt)
+model.compile(opt, loss = "cross_entropy")
 
-model.fit(train_x, train_y, epochs=500, verbose=10, batch_size=128)
+model.fit(train_x, train_y, epochs=1000, verbose=10, batch_size=256)
 train_loss, train_acc = model.evaluate(train_x, train_y)
 val_loss, val_acc = model.evaluate(test_x, test_y)
 print("train : loss - %f acc - %f" % (train_loss, train_acc))

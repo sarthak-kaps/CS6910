@@ -75,11 +75,22 @@ class Softmax(Layer):
         return self.h
 
     # Done
-    def get_gradient(self, y):
-        grad = np.zeros(self.a.shape)
-        for i in range(len(y)):
-            grad[y[i], i] = 1
-        return -(grad - self.h)
+    def get_gradient(self, y, loss_metric = "cross_entropy"):
+        if loss_metric == "cross_entropy" :
+            grad = np.zeros(self.a.shape)
+            for i in range(len(y)):
+                grad[y[i], i] = 1
+            return -(grad - self.h)
+        elif loss_metric == "mse" :
+            grad = np.zeros(self.a.shape)
+            for i in range(len(y)):
+                y_true_prob = np.zeros(self.output_dim)
+                y_true_prob[y[i]] = 1
+                y_pred_prob = self.h[:, i]
+                grad[:, i] = (y_true_prob - y_pred_prob) * y_pred_prob - ((y_true_prob - y_pred_prob).T @ y_pred_prob) * y_pred_prob
+            return grad
+        else :
+            raise ValueError("Unexpected Loss Metric, got " + loss_metric)
 
 
 class Dense(Layer):
@@ -229,6 +240,7 @@ class Sequential:
                 f"Optimizer {optimizer} not defined. Choices are {extras.optimizers.keys()}.")
 
         self.loss = extras.metrics.get(loss)
+        self.loss_name = loss
         if self.loss is None:
             raise ValueError(
                 f"Loss {loss} not defined. Choices are {extras.metrics.keys()}")
@@ -353,7 +365,7 @@ class Sequential:
     def __back_propagation(self, X, y):
         n_layers = len(self.layers)
         output_layer = self.layers[n_layers - 1]
-        grad_a = output_layer.get_gradient(y)
+        grad_a = output_layer.get_gradient(y, self.loss_name)
         # grad_a = (2,n)
         weight_grads, bias_grads = [], []
         # the ith index of the gradients vector will contain the gradient with respect to weight, bias for the ith layer, stored as (grad(weight), grad(bias))
