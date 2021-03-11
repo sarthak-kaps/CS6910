@@ -21,14 +21,14 @@ hyperparameter_defaults = dict(
 )
 
 
-metrics_list = ["mse", "accuracy", "cross_entropy"]
+metrics_list = ["mse", "accuracy"]
 
 
 def callback(eps, train_metrics, val_metrics):
     # print(metrics)
-    wandb.log({"epoch": eps, "train_loss": train_metrics[0], "train_mse": train_metrics[1],
-               "train_accuracy": train_metrics[2], "train_cross_entropy": train_metrics[3],
-               "val_loss": val_metrics[0], "val_mse": val_metrics[1], "val_accuracy": val_metrics[2], "val_cross_entropy": val_metrics[3]})
+    wandb.log({"train_loss": train_metrics[0], "train_mse": train_metrics[1],
+               "train_accuracy": train_metrics[2],
+               "val_loss": val_metrics[0], "val_mse": val_metrics[1], "val_accuracy": val_metrics[2]})
 
     # Pass your defaults to wandb.init
 wandb.init(config=hyperparameter_defaults)
@@ -47,14 +47,15 @@ train_x, val_x, train_y, val_y = train_test_split(
     train_x, train_y, test_size=0.1, random_state=0, shuffle=True)
 
 model = models.Sequential()
-for i in range(config.num_hidden_layers):
+for i in range(config.num_hidden_layers - 1):
     if(i == 0):
         model.add(models.Dense(config.hidden_layer_size,
                                activation=config.activation, weight_initializer=config.weight_init, l2=config.l2, input_dim=784))
     else:
         model.add(models.Dense(config.hidden_layer_size,
-                               activation=config.activation))
-
+                               activation=config.activation, weight_initializer=config.weight_init, l2=config.l2))
+model.add(models.Dense(10, activation=config.activation,
+                       weight_initializer=config.weight_init, l2=config.l2))
 model.add(models.Softmax())
 
 opt = optimizers.optimizers[config.optimizer](config.learning_rate)
