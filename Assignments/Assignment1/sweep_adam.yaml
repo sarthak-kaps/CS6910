@@ -15,12 +15,10 @@ parameters:
     - 64
     - 128
     - 256
-    - 1024
-    - 2048
   epochs:
     distribution: q_uniform
-    max: 300
-    min: 100
+    max: 100
+    min: 50
     q: 50
   hidden_layer_size:
     distribution: categorical
@@ -31,17 +29,13 @@ parameters:
     distribution: categorical
     values:
     - 100e-5
-    - 75e-5
     - 50e-5
-    - 25e-5
     - 1e-4
   learning_rate:
     distribution: categorical
     values:
     - 1e-2
-    - 75e-4
     - 5e-3
-    - 25e-4
     - 1e-3
 
   num_hidden_layers:
@@ -50,7 +44,6 @@ parameters:
     - 2
     - 3
     - 4
-    - 5
   optimizer:
     distribution: categorical
     values:
@@ -59,6 +52,8 @@ parameters:
     distribution: categorical
     values:
     - xavier
+  loss:
+    value: "mse"
 early_terminate:
   type: hyperband
   eta: 2

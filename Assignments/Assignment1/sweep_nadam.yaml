@@ -1,8 +1,4 @@
-early_terminate:
-  eta: 3
-  max_iter: 27
-  s: 2
-  type: hyperband
+program: sweep.py
 method: bayes
 metric:
   goal: minimize
@@ -66,4 +62,10 @@ parameters:
     distribution: categorical
     values:
     - xavier
-program: sweep.py
+  loss:
+    value: "cross_entropy"
+early_terminate:
+  eta: 3
+  max_iter: 27
+  s: 2
+  type: hyperband
