@@ -14,7 +14,8 @@ test_x = np.reshape(test_x, (-1, 784))/255.0
 model = models.Sequential()
 model.add(models.Dense(128, activation="ReLU", input_dim=784))
 # model.add(models.Dense(32, activation="sigmoid"))
-model.add(models.Dense(10, activation="ReLU"))
+model.add(models.Dense(128, activation="ReLU"))
+model.add(models.Dense(128, activation="ReLU"))
 model.add(models.Softmax())
 
 opt = optimizers.Adam(0.5)
