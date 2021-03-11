@@ -4,10 +4,10 @@ import optimizers
 import numpy as np
 from keras.datasets import fashion_mnist
 from sklearn.model_selection import train_test_split
+np.random.seed(0)
 
-# Set up your default hyperparameters before wandb.init
-# so they get properly set in the sweep
 
+# Default dictionary for hyperparams
 hyperparameter_defaults = dict(
     hidden_layer_size=32,
     num_hidden_layers=3,
@@ -20,32 +20,41 @@ hyperparameter_defaults = dict(
     activation="ReLU",
 )
 
-
-metrics_list = ["mse", "accuracy"]
+# List of metrices to be checked while fitting
+metrics_list = ["mse", "accuracy", "cross_entropy"]
 
 
 def callback(eps, train_metrics, val_metrics):
     # print(metrics)
     wandb.log({"train_loss": train_metrics[0], "train_mse": train_metrics[1],
-               "train_accuracy": train_metrics[2],
-               "val_loss": val_metrics[0], "val_mse": val_metrics[1], "val_accuracy": val_metrics[2]})
+               "train_accuracy": train_metrics[2], "train_cross_entropy": train_metrics[3],
+               "val_loss": val_metrics[0], "val_mse": val_metrics[1], "val_accuracy": val_metrics[2],
+               "val_cross_entropy": val_metrics[3]
+               })
 
-    # Pass your defaults to wandb.init
-wandb.init(config=hyperparameter_defaults)
+
+# Wandb initialization
+wandb.init(config=hyperparameter_defaults,
+           project="assignment1", name="sweep_with_mse")
 config = wandb.config
 
-# Your model here ...
-np.random.seed(0)
+
+# Loading dataset and names
 (train_x, train_y), (test_x, test_y) = fashion_mnist.load_data()
 class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
                'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
+
+# normalization
 train_x = np.reshape(train_x, (-1, 784))/255.0
 test_x = np.reshape(test_x, (-1, 784))/255.0
 
+
+# Splitting train dataset for validation
 train_x, val_x, train_y, val_y = train_test_split(
     train_x, train_y, test_size=0.1, random_state=0, shuffle=True)
 
+# Main model configuration
 model = models.Sequential()
 for i in range(config.num_hidden_layers - 1):
     if(i == 0):
@@ -58,10 +67,23 @@ model.add(models.Dense(10, activation=config.activation,
                        weight_initializer=config.weight_init, l2=config.l2))
 model.add(models.Softmax())
 
-opt = optimizers.optimizers[config.optimizer](config.learning_rate)
-model.compile(opt, metrics=metrics_list)
 
+# Model compilation
+opt = optimizers.optimizers[config.optimizer](config.learning_rate)
+model.compile(opt, loss=config.loss, metrics=metrics_list)
+
+# fit model on train and validation
 model.fit(train_x, train_y, val_x, val_y, epochs=config.epochs, verbose=10,
           batch_size=config.batch_size, callback_fn=callback)
 
-# Log metrics inside your training loop
+
+# Check test dataset prediction
+y_pred = model.predict(test_x)
+
+
+# Confusion matrix
+wandb.log({"conf_mat": wandb.plot.confusion_matrix(
+    probs=None,
+    y_true=test_y,
+    preds=y_pred,
+    class_names=class_names)})
