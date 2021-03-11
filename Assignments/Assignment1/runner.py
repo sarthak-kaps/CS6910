@@ -21,9 +21,13 @@ model.add(models.Dense(20, activation="sigmoid"))
 model.add(models.Dense(2, activation="sigmoid"))
 model.add(models.Softmax())
 
+<<<<<<< HEAD
+opt = optimizers.Adam(learning_rate=0.01)
+=======
 wandb.config.learnning_rate = 0.1
 
 opt = optimizers.Adam(learning_rate=0.1)
+>>>>>>> e6421270455b757b9cc01d4590739fe156b15183
 model.compile(opt)
 
 for i in range(20):

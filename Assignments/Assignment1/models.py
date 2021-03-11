@@ -75,11 +75,22 @@ class Softmax(Layer):
         return self.h
 
     # Done
-    def get_gradient(self, y):
-        grad = np.zeros(self.a.shape)
-        for i in range(len(y)):
-            grad[y[i], i] = 1
-        return -(grad - self.h)
+    def get_gradient(self, y, loss_metric = "cross_entropy"):
+        if loss_metric == "cross_entropy" :
+            grad = np.zeros(self.a.shape)
+            for i in range(len(y)):
+                grad[y[i], i] = 1
+            return -(grad - self.h)
+        elif loss_metric == "mse" :
+            grad = np.zeros(self.a.shape)
+            for i in range(len(y)):
+                y_true_prob = np.zeros(self.output_dim)
+                y_true_prob[y[i]] = 1
+                y_pred_prob = self.h[:, i]
+                grad[:, i] = (y_true_prob - y_pred_prob) * y_pred_prob - ((y_true_prob - y_pred_prob).T @ y_pred_prob) * y_pred_prob
+            return grad
+        else :
+            raise ValueError("Unexpected Loss Metric, got " + loss_metric)
 
 
 class Dense(Layer):
@@ -229,6 +240,7 @@ class Sequential:
                 f"Optimizer {optimizer} not defined. Choices are {extras.optimizers.keys()}.")
 
         self.loss = extras.metrics.get(loss)
+        self.loss_name = loss
         if self.loss is None:
             raise ValueError(
                 f"Loss {loss} not defined. Choices are {extras.metrics.keys()}")
@@ -275,9 +287,33 @@ class Sequential:
 
         ts = 1
         for ep in range(epochs):
+            outputs = []
+            #w, b = self.__get_all_parameters()
+
+            
             range_start = 0
             range_end = batch_size
 
+            """
+            while range_start < batch_size :
+                weight_grads, bias_grads = [], []
+                for i in range(len(self.layers)-1):
+                    weight_grads.append(np.zeros(w[i].shape))
+                    bias_grads.append(np.zeros(b[i].shape))
+                X_batch = X[range_start : range_end]
+                Y_batch = Y[range_start : range_end]
+                w, b = None, None
+                for x, y in zip(X_batch, Y_batch):
+                    x = np.reshape(x, (-1, 1))
+                    outputs.append(self.__forward(x))
+                    # Later on we will change X and y to support mini batch and stochastic gradient descent
+                    w, b = self.__back_propagation(x, y)
+                    for i in range(0, len(w)):
+                        weight_grads[i] += w[i]
+                        bias_grads[i] += b[i]
+            range_start = 0
+            range_end = batch_size
+            """
             while range_start < batch_size:
 
                 X_batch = X[range_start: range_end]
@@ -329,7 +365,7 @@ class Sequential:
     def __back_propagation(self, X, y):
         n_layers = len(self.layers)
         output_layer = self.layers[n_layers - 1]
-        grad_a = output_layer.get_gradient(y)
+        grad_a = output_layer.get_gradient(y, self.loss_name)
         # grad_a = (2,n)
         weight_grads, bias_grads = [], []
         # the ith index of the gradients vector will contain the gradient with respect to weight, bias for the ith layer, stored as (grad(weight), grad(bias))
