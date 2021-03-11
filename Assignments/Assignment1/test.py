@@ -30,7 +30,7 @@ def callback(eps, train_metrics, val_metrics):
                "train_accuracy": train_metrics[2], "train_cross_entropy": train_metrics[3]})
 
     # Pass your defaults to wandb.init
-wandb.init(config=hyperparameter_defaults, project = 'assignment1')
+wandb.init(config=hyperparameter_defaults, project='assignment1')
 config = wandb.config
 print(config)
 
@@ -64,10 +64,10 @@ model.fit(train_x, train_y, epochs=config.epochs, verbose=10,
 
 y_pred = model.predict(test_x)
 
-wandb.log({"conf_mat" : wandb.plot.confusion_matrix(
-                        probs=None,
-                        y_true=test_y,
-                        preds=y_pred,
-                        class_names=class_names)})
+wandb.log({"conf_mat": wandb.plot.confusion_matrix(
+    probs=None,
+    y_true=test_y,
+    preds=y_pred,
+    class_names=class_names)})
 
 # Log metrics inside your training loop

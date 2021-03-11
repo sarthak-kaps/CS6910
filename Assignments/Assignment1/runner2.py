@@ -12,21 +12,21 @@ train_x = np.reshape(train_x, (-1, 784))/255.0
 test_x = np.reshape(test_x, (-1, 784))/255.0
 
 model = models.Sequential()
-model.add(models.Dense(32, activation="ReLU", weight_initializer = "xavier", input_dim=784, l2 = 0.0005))
+model.add(models.Dense(32, activation="ReLU",
+                       weight_initializer="xavier", input_dim=784, l2=0.0005))
 #model.add(models.Dense(128, activation="ReLU"))
-model.add(models.Dense(32, activation="ReLU", weight_initializer = "xavier", l2 = 0.000005))
-model.add(models.Dense(32, activation="ReLU", weight_initializer = "xavier", l2 = 0.000005))
-model.add(models.Dense(32, activation="ReLU", weight_initializer = "xavier", l2 = 0.000005))
-model.add(models.Dense(10, activation="ReLU", weight_initializer = "xavier", l2 = 0.000005))
+model.add(models.Dense(32, activation="ReLU",
+                       weight_initializer="xavier", l2=0.000005))
+model.add(models.Dense(32, activation="ReLU",
+                       weight_initializer="xavier", l2=0.000005))
+model.add(models.Dense(32, activation="ReLU",
+                       weight_initializer="xavier", l2=0.000005))
+model.add(models.Dense(10, activation="ReLU",
+                       weight_initializer="xavier", l2=0.000005))
 model.add(models.Softmax())
 
-<<<<<<< HEAD
-opt = optimizers.Momentum()
-model.compile(opt, loss = "cross_entropy")
-=======
 opt = optimizers.Adam(0.5)
 model.compile(opt, loss="cross_entropy")
->>>>>>> 5487678eba965558f8462f2ef694409bdcff49ba
 
 model.fit(train_x, train_y, epochs=1000, verbose=10, batch_size=1)
 train_loss, train_acc = model.evaluate(train_x, train_y)
