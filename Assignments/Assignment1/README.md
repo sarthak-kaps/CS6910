@@ -11,4 +11,6 @@ The assignment consists of the following files -
                  predict_probab function and the evaluate function.
   
   2) optimizers.py - Contains the implementation of the generic optimizer class.
-                     
+                     Various optimizers are implemented including SGD (with support for momentum and nesterov acceleration), 
+                     RMSprop, Adam and Nadam.
+                     Each of the optimzers can be incorporated easily with the models created.
