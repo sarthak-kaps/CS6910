@@ -1,0 +1,61 @@
+program: ../sweep.py
+method: bayes
+metric:
+  goal: minimize
+  name: val_loss
+parameters:
+  activation:
+    distribution: categorical
+    values:
+    - ReLU
+  batch_size:
+    distribution: categorical
+    values:
+    - 128
+    - 256
+    - 512
+  epochs:
+    distribution: q_uniform
+    max: 12
+    min: 4
+    q: 2
+  hidden_layer_size:
+    distribution: categorical
+    values:
+    - 64
+    - 128
+  l2:
+    distribution: categorical
+    values:
+    - 100e-5
+    - 50e-5
+    - 1e-4
+  learning_rate:
+    distribution: categorical
+    values:
+    - 1e-2
+    - 5e-3
+    - 1e-3
+
+  num_hidden_layers:
+    distribution: categorical
+    values:
+    - 2
+    - 3
+    - 4
+  optimizer:
+    distribution: categorical
+    values:
+    - adam
+    - nadam
+  weight_init:
+    distribution: categorical
+    values:
+    - xavier
+  loss:
+    value: "mse"
+early_terminate:
+  eta: 3
+  max_iter: 27
+  s: 2
+  type: hyperband
