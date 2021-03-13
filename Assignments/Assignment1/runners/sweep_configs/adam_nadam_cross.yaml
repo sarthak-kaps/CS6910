@@ -1,4 +1,10 @@
-program: ../sweep.py
+program: Assignment1.runners.sweep
+command:
+  - ${env}
+  - python
+  - "-m"
+  - ${program}
+  - ${args}
 method: bayes
 metric:
   goal: minimize

@@ -14,6 +14,8 @@ parameters:
     distribution: categorical
     values:
     - ReLU
+    - sigmoid
+    - tanh
   batch_size:
     distribution: categorical
     values:
@@ -54,12 +56,15 @@ parameters:
     values:
     - adam
     - nadam
+    - rmsprop
+    - sgd
+    - momentum
   weight_init:
     distribution: categorical
     values:
     - xavier
   loss:
-    value: "mse"
+    value: "cross_entropy"
 early_terminate:
   eta: 3
   max_iter: 27
