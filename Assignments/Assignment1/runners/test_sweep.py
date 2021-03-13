@@ -6,7 +6,7 @@ import wandb
 from keras.datasets import fashion_mnist
 from sklearn.metrics import confusion_matrix
 
-from ..src import models, optimizers, extras
+from src import models, optimizers, extras
 
 # for consistency
 np.random.seed(0)

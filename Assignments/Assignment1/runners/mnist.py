@@ -3,7 +3,7 @@ import wandb
 from keras.datasets import mnist
 from sklearn.model_selection import train_test_split
 
-from ..src import models, optimizers
+from src import models, optimizers
 
 np.random.seed(0)
 

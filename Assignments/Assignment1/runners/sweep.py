@@ -3,7 +3,7 @@ import wandb
 from keras.datasets import fashion_mnist
 from sklearn.model_selection import train_test_split
 
-from ..src import models, optimizers, extras
+from src import models, optimizers, extras
 
 # For consistentency
 np.random.seed(0)
