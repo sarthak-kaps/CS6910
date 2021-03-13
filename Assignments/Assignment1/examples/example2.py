@@ -26,7 +26,7 @@ model.add(models.Dense(10, "ReLU"))
 model.add(models.Softmax())
 
 # using the Adam Optimizer
-opt = optimizers.Adam(0.0005)
+opt = optimizers.Adam(0.005)
 
 # Model compilation
 model.compile(optimizer=opt, loss="cross_entropy",
@@ -35,5 +35,5 @@ model.compile(optimizer=opt, loss="cross_entropy",
 # fit model on train and validation
 model.fit(train_x, train_y, epochs=10, batch_size=512)
 
-# Evaluate on test dataset, will return metrics 
+# Evaluate on test dataset, will return metrics
 model.evaluate(test_x, test_y)

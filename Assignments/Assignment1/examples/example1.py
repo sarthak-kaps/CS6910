@@ -18,7 +18,7 @@ model.add(models.Dense(10, "ReLU"))
 model.add(models.Softmax())
 
 # using the Adam Optimizer
-opt = optimizers.Adam(0.0005)
+opt = optimizers.Adam(0.005)
 
 # Model compilation
 model.compile(optimizer=opt, loss="cross_entropy",

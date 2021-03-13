@@ -8,9 +8,12 @@
 
 - You can find various examples in examples directory. Also, all the wandb scripts are located in runners directory.
 
+- Note: All the examples can be run from the root directory only, i.e. Assignment1/
+- For ex: runners/mnist.py can be run using, `python -m runners.mnist`
+- The imports are done considering Assignment1 as a module.
 - Currently, the source code consists of the following files -
 
-#### models.py
+#### src/models.py
 
 - Contains all the classes and functions for the main neural network models and the layers.
 - Following classes are supported currently -
@@ -29,7 +32,7 @@
   - `predict(X)` : Returns the predicted classes on X dataset
   - `predict_proba(X)` : Returns the predicted probability of each class on X dataset.
 
-#### optimizers.py
+#### src/optimizers.py
 
 - Contains the implementation of 6 different optimizers.
 - Also, the interface is fixed by a generic class `Optimizer`, which is inherited by each individual optimizer classes.
@@ -43,7 +46,7 @@
 - Each of the optimzers can be incorporated easily with the models created.
 - New optimizers can be easily added by using the same interface defined by `Optimizer` class.
 
-#### extras.py
+#### src/extras.py
 
 - This file contains all the metrices, loss functions activation functions, and initialization functions implementations.
 - For each of the above types, a dictionary is defined, which is integrated with models.py in such a way that whenever a new function is added, just a function pointer needs to be stored in this dictionary.
@@ -80,7 +83,7 @@ model.add(models.Dense(10, "ReLU"))
 model.add(models.Softmax())
 
 # using the Adam Optimizer
-opt = optimizers.Adam(0.0005)
+opt = optimizers.Adam(0.005)
 
 # Model compilation
 model.compile(optimizer=opt, loss="cross_entropy",
@@ -124,7 +127,7 @@ model.add(models.Dense(10, "ReLU"))
 model.add(models.Softmax())
 
 # using the Adam Optimizer
-opt = optimizers.Adam(0.0005)
+opt = optimizers.Adam(0.005)
 
 # Model compilation
 model.compile(optimizer=opt, loss="cross_entropy",
@@ -133,7 +136,7 @@ model.compile(optimizer=opt, loss="cross_entropy",
 # fit model on train and validation
 model.fit(train_x, train_y, epochs=10, batch_size=512)
 
-# Evaluate on test dataset, will return metrics 
+# Evaluate on test dataset, will return metrics
 model.evaluate(test_x, test_y)
 
 ```
