@@ -38,8 +38,7 @@ def callback(eps, train_metrics, val_metrics):
 
 
 # Wandb initialization
-wandb.init(config=hyperparameter_defaults,
-           project="assignment1", group="adam_nadam_relu_cross")
+wandb.init(config=hyperparameter_defaults)
 config = wandb.config
 wandb.run.name = f"hl_{config.hidden_layer_size}_nhl_{config.num_hidden_layers}_bs_{config.batch_size}_opt_{config.optimizer}"
 wandb.run.save()

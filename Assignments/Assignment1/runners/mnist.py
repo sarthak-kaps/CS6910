@@ -12,37 +12,37 @@ np.random.seed(0)
 configs = [
     dict(
         hidden_layer_size=128,
-        num_hidden_layers=3,
-        learning_rate=0.001,
-        epochs=10,
-        l2=25e-7,
-        optimizer="adam",
-        batch_size=2048,
+        num_hidden_layers=4,
+        learning_rate=1e-3,
+        epochs=12,
+        l2=1e-3,
+        optimizer="nadam",
+        batch_size=256,
         weight_init="xavier",
         activation="ReLU",
         loss="cross_entropy"
     ), dict(
         hidden_layer_size=128,
         num_hidden_layers=4,
-        learning_rate=0.001,
-        epochs=10,
-        l2=5e-5,
+        learning_rate=1e-3,
+        epochs=12,
+        l2=1e-3,
         optimizer="nadam",
-        batch_size=2048,
-        weight_init="xavier",
-        activation="ReLU",
-        loss="cross_entropy"
-    ), dict(
-        hidden_layer_size=128,
-        num_hidden_layers=3,
-        learning_rate=0.001,
-        epochs=10,
-        l2=5e-7,
-        optimizer="adam",
-        batch_size=2048,
+        batch_size=512,
         weight_init="xavier",
         activation="ReLU",
         loss="mse"
+    ), dict(
+        hidden_layer_size=64,
+        num_hidden_layers=4,
+        learning_rate=5e-3,
+        epochs=10,
+        l2=1e-4,
+        optimizer="nadam",
+        batch_size=512,
+        weight_init="xavier",
+        activation="ReLU",
+        loss="cross_entropy"
     )]
 
 # List of metrices to be checked while fitting
@@ -61,8 +61,8 @@ def callback(eps, train_metrics, val_metrics):
 
 
 # Wandb initialization
-wandb.init(config=configs[0],
-           project="assignment1", name="mnist_run_1")
+wandb.init(config=configs[2],
+           project="assignment1", name="mnist_run_3")
 config = wandb.config
 
 # Loading dataset and names
