@@ -33,7 +33,7 @@
 
 - Contains the implementation of 6 different optimizers.
 - Also, the interface is fixed by a generic class `Optimizer`, which is inherited by each individual optimizer classes.
-- Currently supported optimizers inclue
+- Currently supported optimizers include
   - `SGD`
   - `Nesterov`
   - `Momentum`
@@ -55,14 +55,15 @@
 
 #### Examples
 
-**Note:** The commands to run words only from the root directory, i.e., Assignment1
+**Note:** The commands to run works only from the root directory, i.e., Assignment1
 
 ###### example1.py
 
 ```python
 import numpy as np
 from keras.datasets import mnist
-from Assignment1.src import models
+from src import models
+from src import optimizers
 
 # Loading dataset and names
 (train_x, train_y), (test_x, test_y) = mnist.load_data()
@@ -78,15 +79,19 @@ model.add(models.Dense(128, "ReLU"))
 model.add(models.Dense(10, "ReLU"))
 model.add(models.Softmax())
 
+# using the Adam Optimizer
+opt = optimizers.Adam(0.0005)
+
 # Model compilation
-model.compile(optimizer="adam", loss="cross_entropy",
+model.compile(optimizer=opt, loss="cross_entropy",
               metrics=["mse", "accuracy"])
 
 # fit model on train and validation
 model.fit(train_x, train_y, epochs=10)
+
 ```
 
-- **To run** : `python -m Assignment1.examples.example1`
+- **To run** : `python -m examples.example1`
 
 ###### example2.py
 
@@ -94,7 +99,8 @@ model.fit(train_x, train_y, epochs=10)
 import numpy as np
 from keras.datasets import fashion_mnist
 from sklearn.model_selection import train_test_split
-from Assigment1.src import models
+from src import models
+from src import optimizers
 
 # List of metrices to be checked while fitting
 metrics_list = ["mse", "accuracy", "cross_entropy"]
@@ -117,17 +123,19 @@ model.add(models.Dense(128, "ReLU"))
 model.add(models.Dense(10, "ReLU"))
 model.add(models.Softmax())
 
+# using the Adam Optimizer
+opt = optimizers.Adam(0.0005)
 
 # Model compilation
-model.compile(optimizer="adam", loss="cross_entropy",
+model.compile(optimizer=opt, loss="cross_entropy",
               metrics=["mse", "accuracy"])
 
 # fit model on train and validation
 model.fit(train_x, train_y, epochs=10, batch_size=512)
 
-# Evaluate on test dataset
+# Evaluate on test dataset, will return metrics 
 model.evaluate(test_x, test_y)
 
 ```
 
-- **To run** : `python -m Assignment1.examples.example2`
+- **To run** : `python -m examples.example2`

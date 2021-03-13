@@ -1,6 +1,7 @@
 import numpy as np
 from keras.datasets import mnist
-from ..src import models
+from src import models
+from src import optimizers
 
 # Loading dataset and names
 (train_x, train_y), (test_x, test_y) = mnist.load_data()
@@ -16,8 +17,11 @@ model.add(models.Dense(128, "ReLU"))
 model.add(models.Dense(10, "ReLU"))
 model.add(models.Softmax())
 
+# using the Adam Optimizer
+opt = optimizers.Adam(0.0005)
+
 # Model compilation
-model.compile(optimizer="adam", loss="cross_entropy",
+model.compile(optimizer=opt, loss="cross_entropy",
               metrics=["mse", "accuracy"])
 
 # fit model on train and validation

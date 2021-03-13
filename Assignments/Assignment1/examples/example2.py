@@ -1,7 +1,8 @@
 import numpy as np
 from keras.datasets import fashion_mnist
 from sklearn.model_selection import train_test_split
-from ..src import models
+from src import models
+from src import optimizers
 
 # List of metrices to be checked while fitting
 metrics_list = ["mse", "accuracy", "cross_entropy"]
@@ -24,13 +25,15 @@ model.add(models.Dense(128, "ReLU"))
 model.add(models.Dense(10, "ReLU"))
 model.add(models.Softmax())
 
+# using the Adam Optimizer
+opt = optimizers.Adam(0.0005)
 
 # Model compilation
-model.compile(optimizer="adam", loss="cross_entropy",
+model.compile(optimizer=opt, loss="cross_entropy",
               metrics=["mse", "accuracy"])
 
 # fit model on train and validation
 model.fit(train_x, train_y, epochs=10, batch_size=512)
 
-# Evaluate on test dataset
+# Evaluate on test dataset, will return metrics 
 model.evaluate(test_x, test_y)
