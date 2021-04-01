@@ -1,3 +1,3 @@
-#ASSIGNMENT 2
+# ASSIGNMENT 2
 
 ### Convolutional Neural Networks
