@@ -31,21 +31,32 @@ def remove_corrupted_images() :
     print("Number Of Corrupted Images : ", num_corrupted)
 
 # generating the Dataset, returns train, validation and test data
-# TODO : add support for data augmentation 
+# TODO : add more support for data augmentation 
 
-def generate_dataset(batch_size = 32) :
-  
-    imagegen = tf.keras.preprocessing.image.ImageDataGenerator(
+def generate_dataset(config) :
+     
+    imagegen_without_aug = tf.keras.preprocessing.image.ImageDataGenerator(
         rescale = 1./255, 
         validation_split = 0.1
     )
+ 
+    if config.data_augmentation == "No" :
+        imagegen = imagegen_without_aug    
+    else :
+        imagegen = tf.keras.preprocessing.image.ImageDataGenerator(
+            rescale = 1./255, 
+            validation_split = 0.1, 
+            rotation_range=15,  # randomly rotate images in the range (degrees, 0 to 180)
+            width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
+            height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+        )
   
     train_ds = imagegen.flow_from_directory(
         "inaturalist_12K/train/",
         subset = "training", 
         seed = 1337, 
         class_mode = "categorical",
-        batch_size = batch_size
+        batch_size = config.batch_size
     )
   
     val_ds = imagegen.flow_from_directory(
@@ -53,13 +64,13 @@ def generate_dataset(batch_size = 32) :
         subset = "validation",
         seed = 1337,
         class_mode = "categorical", 
-        batch_size = batch_size
+        batch_size = config.batch_size
     )
   
-    test_ds = imagegen.flow_from_directory(
+    test_ds = imagegen_without_aug.flow_from_directory(
         "inaturalist_12K/val/",  
         seed = 1337,  
-        batch_size = batch_size
+        batch_size = config.batch_size
     ) 
   
     return train_ds, val_ds, test_ds
