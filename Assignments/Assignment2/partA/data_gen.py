@@ -49,6 +49,8 @@ def generate_dataset(config) :
             rotation_range=15,  # randomly rotate images in the range (degrees, 0 to 180)
             width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
             height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+            zoom_range = 0.3,
+            zca_epsilon = 1e-6,
         )
   
     train_ds = imagegen.flow_from_directory(
