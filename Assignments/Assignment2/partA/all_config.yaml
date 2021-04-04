@@ -24,9 +24,9 @@ parameters:
     - 256
   epochs:
     distribution: q_uniform
-    max: 40
+    max: 20
     min: 10
-    q: 10
+    q: 5
   filter_organisation :
     distribution: categorical
     values:
@@ -38,38 +38,36 @@ parameters:
     distribution: categorical
     values:
     - 3
-    - 5
     - 7
+    - 11
   filter_size_1:
     distribution: categorical
     values:
     - 3
-    - 5
     - 7
+    - 11
   filter_size_2:
     distribution: categorical
     values:
     - 3
-    - 5
     - 7
+    - 11
   filter_size_3:
     distribution: categorical
     values:
     - 3
-    - 5
     - 7
+    - 11
   filter_size_4:
     distribution: categorical
     values:
     - 3
-    - 5
     - 7
+    - 11
   pool_size:
     distribution: categorical
     values:
     - 2
-    - 3
-    - 4
   optimizer:
     distribution: categorical
     values:
@@ -96,7 +94,6 @@ parameters:
     distribution: categorical
     values:
     - relu
-    - sigmoid
   dense_activation:
     distribution: categorical
     values:
