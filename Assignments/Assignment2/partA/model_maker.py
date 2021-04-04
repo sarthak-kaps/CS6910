@@ -43,7 +43,7 @@ def make_model(input_shape, num_classes, config) :
       model.add(BatchNormalization())
     
     model.add(layers.Activation(config.convolution_activation))
-    model.add(layers.MaxPooling2D(pool_size = (config.pool_size, config.pool_size), dim_ordering="th"))
+    model.add(layers.MaxPooling2D(pool_size = (config.pool_size, config.pool_size), strides = (1, 1), padding = 'same', data_format = 'channels_last'))
     
   if config.dropout > 0 :
     model.add(layers.Dropout(config.dropout))
