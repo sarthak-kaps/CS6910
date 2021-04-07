@@ -57,4 +57,3 @@ model.fit(
   validation_data= val_ds,
   callbacks=[WandbCallback(data_type="image", labels=class_names)]
 )
-
