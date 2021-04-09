@@ -6,8 +6,6 @@ from wandb.keras import WandbCallback
 import data_gen
 import model_maker
 
-# For consistency
-np.random.seed(0)
 
 # Default dictionary for hyperparams
 hyperparameter_defaults = dict(
@@ -35,30 +33,7 @@ class_names = ['Amphibia', 'Animalia', 'Arachnida', 'Aves', 'Fungi', 'Insecta', 
 # Wandb initialization
 wandb.init(config=hyperparameter_defaults)
 config = wandb.config
-wandb.run.name = f"org_{config.filter_organisation}_nfLayer1_{config.number_of_filters_first_layer}_dataAug_{config.data_augmentation}_drpout_{config.dropout}_bs_{config.batch_size}_opt_{config.optimizer}"
 
-wandb.run.save()
-
-
-train_ds, val_ds, test_ds = data_gen.generate_dataset(config)
-model = model_maker.make_model(train_ds.image_shape, 10, config)
-
-#print(model.summary())
-
-model.compile(
-  optimizer = config.optimizer,
-  loss = "categorical_crossentropy",
-  metrics = ["accuracy"]
-)
-
-model.fit(
-  train_ds, 
-  epochs = config.epochs, 
-  validation_data= val_ds,
-  callbacks=[WandbCallback(data_type="image", labels=class_names)]
-)
-
-model.save("best_model")
 model = tf.keras.models.load_model("best_model")
 
 # get prediction on the test images
@@ -77,6 +52,8 @@ def get_accuracy() :
 
   wandb.log({"test_accuracy": acc})
 
+# choose 30 images and plot them with their true class and predicted class
+# For more points try adding the class our model max confused with
 def plot_sample_images :
   img_cnt = 0
   image_and_labels = []
@@ -103,5 +80,27 @@ def plot_sample_images :
   plt.tight_layout()
   wandb.log({"Classification on sample test images", plt})
 
+def visualize_layer_1_filter() :
+  filters, biases = model.layers[1].get_weights() 
+  # normalize filter values to 0-1 so we can visualize them
+  f_min, f_max = filters.min(), filters.max()
+  filters = (filters - f_min) / (f_max - f_min)
+  # plot first few filters
+  n_filters, ix = config.number_of_filters_first_layer, 1
+  for i in range(n_filters):
+    # get the filter
+    f = filters[:, :, :, i]
+    # plot each channel separately
+    for j in range(3):
+      ax = plt.subplot(n_filters, 3, ix)
+      ax.set_xticks([])
+      ax.set_yticks([])
+      # plot filter channel in grayscale
+      plt.imshow(f[:, :, j])
+      ix += 1
+  # show the figure
+  wandb.log({"Layer 1 Filter Visualization", plt})
+
 get_accuracy()
 plot_sample_images()
+visualize_layer_1_filter()
