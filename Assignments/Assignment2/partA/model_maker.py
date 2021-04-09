@@ -40,10 +40,10 @@ def make_model(input_shape, num_classes, config) :
     model.add(layers.Conv2D(num_filters[i], (filter_sizes[i], filter_sizes[i])))
     
     if config.batch_normalisation == "Yes" :
-      model.add(BatchNormalization())
+      model.add(layers.BatchNormalization())
     
     model.add(layers.Activation(config.convolution_activation))
-    model.add(layers.MaxPooling2D(pool_size = (config.pool_size, config.pool_size), strides = (1, 1), padding = 'same', data_format = 'channels_last'))
+    model.add(layers.MaxPooling2D(pool_size = (config.pool_size, config.pool_size), strides = None, padding = 'valid', data_format = 'channels_last'))
     
   if config.dropout > 0 :
     model.add(layers.Dropout(config.dropout))
