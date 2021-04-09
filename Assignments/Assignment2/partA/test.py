@@ -58,6 +58,9 @@ model.fit(
   callbacks=[WandbCallback(data_type="image", labels=class_names)]
 )
 
+model.save("best_model")
+model = tf.keras.models.load_model("best_model")
+
 # get prediction on the test images
 predict = model.predict(test_ds)
 pred_class_indices = np.argmax(predict, axis = 1)
