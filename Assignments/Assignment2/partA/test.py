@@ -46,9 +46,10 @@ def get_accuracy() :
 # choose 30 images and plot them with their true class and predicted class
 # For more points try adding the class our model max confused with
 def plot_sample_images() :
-  image_list, true_class, pred_class = [], [], []
+  image_list, true_class, pred_class, pred_proba = [], [], [], []
   for images, labels in test_ds :
-    pred_class = np.argmax(model.predict(images), axis = 1)
+    pred_proba = model.predict(images)
+    pred_class = np.argmax(pred_proba, axis = 1)
     true_class = np.argmax(labels, axis = 1)
     image_list = images
     break
@@ -61,7 +62,8 @@ def plot_sample_images() :
     ax.imshow(image)
     ax.xaxis.set_ticks([])
     ax.yaxis.set_ticks([]) 
-    ax.set_xlabel("TRUE CLASS " + class_names[true_label] + " PRED CLASS " + class_names[pred_label])
+    ax.set_xlabel("TRUE CLASS : " + class_names[true_label] + "\n" + "PREDICTED CLASS : " + class_names[pred_label] + "\n" + \
+        "CONFIDENCE FOR ACTUAL CLASS : " + str(pred_proba[cnt][true_label] * 100) + "%" + "\n" + "CONFIDENCE FOR PREDICTED CLASS : " + str(np.max(pred_proba[cnt] * 100)) + "%")
     cnt += 1
   plt.tight_layout()
   plt.savefig("Classification_on_sample_test_images.png")
