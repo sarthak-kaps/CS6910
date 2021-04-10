@@ -76,13 +76,14 @@ def generate_dataset(config) :
     ) 
   
     return train_ds, val_ds, test_ds
-  
+
 # A helper function to view images
 def visualize_images() :
-    for images, labels in train_ds.take :
-        for i in range(0, 25) :
-            fig = plt.figure()
-            plt.imshow(images[i].numpy().astype("uint8"))
-            plt.title(int(labels[i]))
-            plt.axis("off")
+    for images, labels in train_ds :
+        fig, axes = plt.subplots(len(labels), 1, figsize = (20, 20))
+        axes.flatten()
+        for (im, ax) in zip(images, axes) :
+            ax.imshow(im)
+            ax.xaxis.set_ticks([])
+            ax.yaxis.set_ticks([])
         break 
