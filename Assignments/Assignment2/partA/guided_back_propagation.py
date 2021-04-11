@@ -56,6 +56,7 @@ def guided_back_ReLU(x):
 
 final_layer_name = "conv2d_4"
 
+# restrict model till only the last convolution layer
 model = tf.keras.models.Model(
     inputs = [model.inputs],    
     outputs = [model.get_layer(final_layer_name).output]
@@ -64,30 +65,47 @@ model = tf.keras.models.Model(
 # all layers except the input layer
 model_layers = model.layers[1:]
 
+fired_neurons = set() # stores any 10 neurons in the final convolution layer that got fired 
+
 for layer in model_layers :
   if hasattr(layer, 'activation') :
     if layer.activation == tf.keras.activations.relu :
       layer.activation = guided_back_ReLU
 
-for images, labels in test_ds :
+for images, labels in test_ds : 
+  if len(fired_neurons) >= 10 :
+    break
   with tf.GradientTape() as tape :
     inputs = tf.cast(images, tf.float32)
     tape.watch(inputs)
-    outputs = model(inputs)[0]
+    outputs = model(inputs)
 
-  grads = tape.gradient(outputs, inputs)[0]
+  grads = tape.gradient(outputs, inputs)
 
-  guided_back_prop = grads
+  guided_back_prop_list = grads
+  
+  for (im, guided_back_prop) in zip(images, guided_back_prop_list) : 
+    if len(fired_neurons) >= 10 :
+      break
+    gb_viz = np.dstack((
+        guided_back_prop[:, :, 0], 
+        guided_back_prop[:, :, 1],
+        guided_back_prop[:, :, 2],
+      ))
+    gb_viz -= np.min(gb_viz)
+    gb_viz /= gb_viz.max()
+    
+    fig, axes = plt.subplots(2, 1, figsize = (20, 20))
+  
+    imgplot = axes[0].imshow(gb_viz)
+    axes[1].imshow(im)
+    plt.axis("off")
 
-  gb_viz = np.dstack((
-      guided_back_prop[:, :, 0], 
-      guided_back_prop[:, :, 1],
-      guided_back_prop[:, :, 2],
-    ))
-  gb_viz -= np.min(gb_viz)
-  gb_viz /= gb_viz.max()
+    if(np.max(gb_viz) is not np.nan and np.max(gb_viz) > 0.9) :
+      neuron = np.argmax(gb_viz)
+      fired_neurons.add(neuron)
+      plt.xlabel("Image at which " + str(neuron) + " in the final convolution layer gets fired")
+      plt.savefig("Fired_Neuron_" + str(len(fired_neurons)) + ".png")
 
-  imgplot = plt.imshow(gb_viz)
-  plt.axis("off")
-  plt.show()
-
+    #plt.show() 
+    #print(np.argmax(gb_viz), np.max(gb_viz), gb_viz.shape, gb_viz.shape[0] * gb_viz.shape[1] * gb_viz.shape[2])
