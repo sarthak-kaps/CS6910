@@ -53,7 +53,7 @@ def plot_sample_images() :
     true_class = np.argmax(labels, axis = 1)
     image_list = images
     break
-  fig, axes = plt.subplots(3, 10, figsize = (50, 50))
+  fig, axes = plt.subplots(10, 3, figsize = (50, 50))
   axes = axes.flatten()
   cnt = 0
   for (image, true_label, pred_label, ax) in zip(image_list, true_class, pred_class, axes) :
@@ -72,20 +72,19 @@ def visualize_layer_1_filter() :
   filters = model.layers[0].get_weights()[0]
   # print(filters)
   # normalize filter values to 0-1 so we can visualize them
-  # f_min, f_max = filters.min(), filters.max()
-  # filters = (filters - f_min) / (f_max - f_min)
+  f_min, f_max = filters.min(), filters.max()
+  filters = (filters - f_min) / (f_max - f_min)
   # plot first few filters
+
   n_filters = config.number_of_filters_first_layer
-  fig, ax = plt.subplots(n_filters, 3, figsize = (5, 25))
-  for i in range(n_filters):
+  print(n_filters)
+  fig, ax = plt.subplots(n_filters // 4, 4, figsize = (10, 25))
+  for i in range(0, n_filters, 4):
     # get the filter
-    f = filters[:, :, :, i]
-    # plot each channel separately
-    for j in range(3):
-      ax[i, j].set_xticks([])
-      ax[i, j].set_yticks([])
-      # plot filter channel in grayscale
-      ax[i, j].imshow(f[:, :, j])
+    for j in range(i, i + 4) :
+      ax[i // 4, j % 4].imshow(filters[:, :, :, j])
+      ax[i // 4, j % 4].xaxis.set_ticks([])
+      ax[i // 4, j % 4].yaxis.set_ticks([])
   # show the figure
   plt.savefig("Layer_1_Filter_Visualization.png")
 
