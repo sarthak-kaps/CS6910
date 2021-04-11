@@ -114,7 +114,7 @@ def visualize_layer_1_filter_on_image() :
     break 
   plt.savefig("filter_1_visualize_on_image.png")
 
-#get_accuracy()
-#plot_sample_images()
-#visualize_layer_1_filter()
+get_accuracy()
+plot_sample_images()
+visualize_layer_1_filter()
 visualize_layer_1_filter_on_image()
