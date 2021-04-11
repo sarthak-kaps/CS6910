@@ -3,6 +3,7 @@ from tensorflow import keras
 from keras import layers
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 import wandb
 import data_gen
 
@@ -66,6 +67,9 @@ model = tf.keras.models.Model(
 model_layers = model.layers[1:]
 
 fired_neurons = set() # stores any 10 neurons in the final convolution layer that got fired 
+num_required_neurons = 10
+
+os.system("mkdir Guided_Back_Prop_Images")
 
 for layer in model_layers :
   if hasattr(layer, 'activation') :
@@ -73,7 +77,7 @@ for layer in model_layers :
       layer.activation = guided_back_ReLU
 
 for images, labels in test_ds : 
-  if len(fired_neurons) >= 10 :
+  if len(fired_neurons) >= num_required_neurons :
     break
   with tf.GradientTape() as tape :
     inputs = tf.cast(images, tf.float32)
@@ -85,7 +89,7 @@ for images, labels in test_ds :
   guided_back_prop_list = grads
   
   for (im, guided_back_prop) in zip(images, guided_back_prop_list) : 
-    if len(fired_neurons) >= 10 :
+    if len(fired_neurons) >= num_required_neurons :
       break
     gb_viz = np.dstack((
         guided_back_prop[:, :, 0], 
@@ -93,7 +97,7 @@ for images, labels in test_ds :
         guided_back_prop[:, :, 2],
       ))
     gb_viz -= np.min(gb_viz)
-    gb_viz /= gb_viz.max()
+    gb_viz /= (gb_viz.max() + 0.0001)
     
     fig, axes = plt.subplots(2, 1, figsize = (20, 20))
   
@@ -105,7 +109,7 @@ for images, labels in test_ds :
       neuron = np.argmax(gb_viz)
       fired_neurons.add(neuron)
       plt.xlabel("Image at which " + str(neuron) + " in the final convolution layer gets fired")
-      plt.savefig("Fired_Neuron_" + str(len(fired_neurons)) + ".png")
+      plt.savefig("Guided_Back_Prop_Images/Fired_Neuron_" + str(len(fired_neurons)) + ".png")
 
     #plt.show() 
     #print(np.argmax(gb_viz), np.max(gb_viz), gb_viz.shape, gb_viz.shape[0] * gb_viz.shape[1] * gb_viz.shape[2])
