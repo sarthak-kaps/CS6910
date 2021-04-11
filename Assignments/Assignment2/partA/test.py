@@ -88,6 +88,33 @@ def visualize_layer_1_filter() :
   # show the figure
   plt.savefig("Layer_1_Filter_Visualization.png")
 
-get_accuracy()
-plot_sample_images()
-visualize_layer_1_filter()
+def visualize_layer_1_filter_on_image() :
+  layer_name = 'conv2d'
+  print(model.summary())
+  # restrict model till only the first convolution layer
+  new_model = tf.keras.models.Model(
+    inputs = [model.inputs],    
+    outputs = [model.get_layer(layer_name).output]
+  )
+
+  for images, labels in test_ds :
+    feature_map_list = new_model.predict(images)
+    print(feature_map_list[0].shape)
+    side1 = 8
+    side2 = 4
+    index = 1
+    for _ in range(side1):
+      for _ in range(side2): 
+        ax = plt.subplot(side1, side2, index)
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        plt.imshow(feature_map_list[0, :, :, index-1], cmap='viridis')
+        index += 1
+    break 
+  plt.savefig("filter_1_visualize_on_image.png")
+
+#get_accuracy()
+#plot_sample_images()
+#visualize_layer_1_filter()
+visualize_layer_1_filter_on_image()
