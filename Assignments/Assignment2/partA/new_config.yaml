@@ -1,0 +1,112 @@
+program: sweep
+command:
+  - ${env}
+  - python
+  - "-m"
+  - ${program}
+  - ${args}
+method: bayes
+metric:
+  goal: minimize
+  name: val_loss
+parameters:
+  number_of_filters_first_layer:
+    distribution: categorical
+    values:
+    - 32
+    - 64
+    - 128
+  batch_size:
+    distribution: categorical
+    values:
+    - 32
+    - 64
+    - 256
+  epochs:
+    distribution: q_uniform
+    max: 30
+    min: 10
+    q: 5
+  filter_organisation :
+    distribution: categorical
+    values:
+    - same
+    - half
+    - double
+    - linear_inc
+  filter_size_0:
+    distribution: categorical
+    values:
+    - 3
+    - 7
+    - 11
+  filter_size_1:
+    distribution: categorical
+    values:
+    - 3
+    - 7
+    - 11
+  filter_size_2:
+    distribution: categorical
+    values:
+    - 3
+    - 7
+    - 11
+  filter_size_3:
+    distribution: categorical
+    values:
+    - 3
+    - 7
+    - 11
+  filter_size_4:
+    distribution: categorical
+    values:
+    - 3
+    - 7
+    - 11
+  pool_size:
+    distribution: categorical
+    values:
+    - 2
+  optimizer:
+    distribution: categorical
+    values:
+    - adam
+    - nadam
+  data_augmentation:
+    distribution: categorical
+    values:
+    - Yes
+    - No
+  dropout:
+    distribution: categorical
+    values:
+    - 0
+    - 0.3
+    - 0.5
+  batch_normalisation:
+    distribution: categorical
+    values:
+    - Yes
+    - No
+  convolution_activation:
+    distribution: categorical
+    values:
+    - relu
+  dense_activation:
+    distribution: categorical
+    values:
+    - relu
+    - tanh
+  neurons_in_dense_layer:
+    distribution: categorical
+    values:
+    - 64
+    - 128
+    - 256
+    - 1024
+early_terminate:
+  eta: 3
+  max_iter: 27
+  s: 2
+  type: hyperband
