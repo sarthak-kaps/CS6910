@@ -11,8 +11,8 @@ This part consists of the following files -
                      This function returns the constructed model.
 
 * `sweep.py` - This the file which performs a sweep on various hyperparameters of the model and logs the results and features in wandb.
-               This file makes call to **data_generator** in `data_gen.py` to get the train, validation and test data.
-               It then calls **make_model** in `model_maker.py` to prepare the model. The model is the compiled and trained on the dataset.
+               This file makes call to `data_generator` in `data_gen.py` to get the train, validation and test data.
+               It then calls `make_model` in `model_maker.py` to prepare the model. The model is the compiled and trained on the dataset.
 
 * `all_config.yaml`, `new_config.yaml` and `special_config.yaml` - These specify the set of configurations we consider for training. They are 
                                                                    specified in detail in the report. Each of these makes calls to `sweep.py` 
@@ -29,8 +29,19 @@ This part consists of the following files -
 * `guided_back_propagation.py` - This file applies the idea of guided back propagation on our best model to get some interesting visualisations 
                                  for the last convolution layer. <br>
                                  We used the `@tf.custom_gradient` functionality to define our own gradient during
-                                 backpropagation. We zeroed all negative gradients and let the positive gradients to flow. <br>
+                                 backpropagation. We zeroed all negative gradients and allowed the positive gradients to flow. <br>
                                  We later overrode the `ReLU` activation with our new activation layer with the above gradient properties. <br>
                                  We then considered 10 random neurons and ran the model over all the images and visualized the inputs for which the neurons 
                                  fired and saved them. <br>
                                  We observed some interesting patterns.
+
+## Results
+
+Our best model which we saved gave the following accuracies - 
+| DATASET          | ACCURACY | LOSS |
+|------------------|-----------------------------------------------|----------------------|
+| Training            |             50.24 %                    | 1.43                    |
+| Validation | 42.06 %                 | 1.754        | 
+| Test    | 42.50 %                                   | 1.752                    |
+
+The visualizations can be found in the wandb report.
