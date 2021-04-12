@@ -1,0 +1,3 @@
+[submodule "Assignments/Assignment2/partC/object-detection-yolo-opencv"]
+	path = Assignments/Assignment2/partC/object-detection-yolo-opencv
+	url = https://github.com/nandinib1999/object-detection-yolo-opencv
