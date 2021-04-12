@@ -12,22 +12,22 @@ np.random.seed(0)
 # Default dictionary for hyperparams
 hyperparameter_defaults = dict(
     number_of_filters_first_layer = 32,
-    filter_organisation = "double",
+    filter_organisation = "linear_inc",
     filter_size_0 = 3,
     filter_size_1 = 3,
     filter_size_2 = 3,
     filter_size_3 = 3,
     filter_size_4 = 3,
     pool_size = 2,
-    data_augmentation = "Yes",
-    dropout = 0.2,
-    batch_normalisation = "Yes",
+    data_augmentation = "No",
+    dropout = 0,
+    batch_normalisation = "No",
     convolution_activation = "relu",
     dense_activation = "tanh",
     neurons_in_dense_layer = 128,
-    epochs = 10, # 30
-    optimizer = "adam",
-    batch_size = 256,
+    epochs = 20, 
+    optimizer = "nadam",
+    batch_size = 32,
 )
 
 class_names = ['Amphibia', 'Animalia', 'Arachnida', 'Aves', 'Fungi', 'Insecta', 'Mammalia', 'Mollusca', 'Plantae', 'Reptilia']
@@ -58,10 +58,6 @@ model.fit(
   callbacks=[WandbCallback(data_type="image", labels=class_names)]
 )
 
-model.save("best_model")
-model = tf.keras.models.load_model("best_model")
+model.save(str(config.run.name))
+model = tf.keras.models.load_model(str(config.run.name))
 
-# get prediction on the test images
-predict = model.predict(test_ds)
-pred_class_indices = np.argmax(predict, axis = 1)
-true_class_indices = test_ds.labels
