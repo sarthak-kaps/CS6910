@@ -1,7 +1,17 @@
 import tensorflow as tf
 from tensorflow import keras
 
-# TODO : add support for Dropout
+def make_cell(config, **kwargs) :
+    if config.cell_type == "LSTM" :
+        return tf.keras.layers.LSTM(**kwargs, dropout = config.dropout, recurrent_dropout = config.recurrent_dropout)
+    elif config.cell_type == "GRU" :
+        return tf.keras.layers.GRU(**kwargs, dropout = config.dropout, recurrent_dropout = config.recurrent_dropout)
+    elif config.cell_type == "RNN" :
+        return tf.keras.layers.RNN(**kwargs, dropout = config.dropout, recurrent_dropout = config.recurrent_dropout)
+    else :
+        raise ValueError("Invalid cell type {}", config.cell_type)
+    
+
 def make_model(config, input_shape_encoder, input_shape_decoder) :
     encoder_inputs = tf.keras.Input(shape = (None, input_shape_encoder))
 
@@ -10,51 +20,41 @@ def make_model(config, input_shape_encoder, input_shape_decoder) :
     for i in range(0, len(config.layer_dimensions)) :
         # if it is not the last LSTM unit we need to set return_sequence = true
         if i < len(config.layer_dimensions) - 1:
-            if config.cell_type == "LSTM" :
-                encoder_outputs, h, c = tf.keras.layers.LSTM(config.layer_dimensions[i], return_state = True, return_sequences = True)(encoder_outputs)
-            elif config.cell_type == "GRU" :
-                encoder_outputs, c = tf.keras.layers.GRU(config.layer_dimensions[i], return_state = True, return_sequences = True)(encoder_outputs)
-            elif config.cell_type == "RNN" :
-                encoder_outputs, c = tf.keras.layers.RNN(config.layer_dimensions[i], return_state = True, return_sequences = True)(encoder_outputs)
-            else :
-                raise ValueError("Invalid cell type {}")
+            try :
+                encoder_outputs, h, c = make_cell(config, units = config.layer_dimensions[i], return_state = True, return_sequences = True)(encoder_outputs)
+                states = [h, c]
+            except :
+                encoder_outputs, c = make_cell(config, units = config.layer_dimensions[i], return_state = True, return_sequences = True)(encoder_outputs)
+                states = [c]
         else :
-            if config.cell_type == "LSTM" : 
-                encoder_outputs, h, c = tf.keras.layers.LSTM(config.layer_dimensions[i], return_state = True)(encoder_outputs)
-            elif config.cell_type == "GRU" :
-                encoder_outputs, c = tf.keras.layers.GRU(config.layer_dimensions[i], return_state = True)(encoder_outputs)
-            elif config.cell_type == "RNN" :
-                encoder_outputs, c = tf.keras.layers.RNN(config.layer_dimensions[i], return_state = True)(encoder_outputs)
-            else :
-                raise ValueError("Invalid cell type {}")
+            try :
+                encoder_outputs, h, c = make_cell(config, units = config.layer_dimensions[i], return_state = True)(encoder_outputs)
+                states = [h, c]
+            except :
+                encoder_outputs, c = make_cell(config, units = config.layer_dimensions[i], return_state = True)(encoder_outputs)
+                states = [c]
 
-        if config.cell_type == "LSTM" :
-            encoder_states += [h, c]
-        else :
-            encoder_states += [c]
-
+        encoder_states.extend(list(states))
+    
     decoder_inputs = tf.keras.Input(shape = (None, input_shape_decoder))
 
     decoder_outputs = decoder_inputs
     for i in range(0, len(config.layer_dimensions)) :
+        factor = 1
         if config.cell_type == "LSTM" :
-            layer = tf.keras.layers.LSTM(config.layer_dimensions[i], return_state = True, return_sequences = True)
-
-            decoder_outputs, _, _ = layer(decoder_outputs, initial_state = encoder_states[2 * i : 2 * (i + 1)])
+            factor *= 2
         
-        elif config.cell_type == "GRU" :
-            layer = tf.keras.layers.GRU(config.layer_dimensions[i], return_state = True, return_sequences = True)
+        layer = make_cell(config, units = config.layer_dimensions[i], return_state = True, return_sequences = True) 
+        try :
+            decoder_outputs, _, _ = layer(decoder_outputs, initial_state = encoder_states[factor * i : factor * (i + 1)])
+        except :
+            decoder_outputs, _ = layer(decoder_outputs, initial_state = encoder_states[factor * i : factor * (i + 1)])
 
-            decoder_outputs, _ = layer(decoder_outputs, initial_state = encoder_states[i : i + 1])
-        
-        else
-            layer = tf.keras.layers.RNN(config.layer_dimensions[i], return_state = True, return_sequences = True)
+    dropout_layer = tf.keras.layers.Dropout(config.dropout)
+    
+    decoder_outputs = dropout_layer(decoder_outputs)
 
-            decoder_outputs, _ = layer(decoder_outputs, initial_state = encoder_states[i : i + 1])
-
-
-
-    decoder_dense = tf.keras.layers.Dense(input_shape_decoder, activation = 'softmax')
+    decoder_dense = tf.keras.layers.Dense(input_shape_decoder, activation = 'softmax', dropout = config.dropout)
 
     decoder_outputs = decoder_dense(decoder_outputs)
 
