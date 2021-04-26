@@ -20,51 +20,26 @@ def clean_files():
         data = pd.read_table("temp")
         data.to_csv(filename_extension + ".csv")
 
-<<<<<<< HEAD
 class one_hot_encoder :
     # some encoder parameters
     num_encoder_tokens = 0
     num_decoder_tokens = 0
     max_encoder_seq_length = 0
     max_decoder_seq_length = 0
-=======
-# Vectorize the data.
 
-
-def vectorize_data(data_path):
-
-    input_texts = []
-    target_texts = []
-    input_characters = set()
-    target_characters = set()
-
-    with open(data_path, "r", encoding="utf-8") as f:
-        lines = f.read().split("\n")
-        for line in lines[:len(lines) - 1]:
-            input_text, target_text, _ = line.split("\t")
-            # We use "tab" as the "start sequence" character
-            # for the targets, and "\n" as "end sequence" character.
-            target_text = "\t" + target_text + "\n"
-            input_texts.append(input_text)
-            target_texts.append(target_text)
-            for char in input_text:
-                if char not in input_characters:
-                    input_characters.add(char)
-            for char in target_text:
-                if char not in target_characters:
-                    target_characters.add(char)
->>>>>>> 2d80f096fa9d4894a41cbcc7951bd0ac970c8aaf
 
     encoder_input_data = []
     decoder_input_data = []
     decoder_target_data = []
+    
 
     def __init__(self, data_paths, file_labels) :
         assert(len(data_paths) == len(file_labels))
         self.data_paths = data_paths
         self.file_labels = file_labels
 
-<<<<<<< HEAD
+
+
     # Vectorize the data.
     # Does one hot encoding
     def vectorize_data(self) :
@@ -120,12 +95,11 @@ def vectorize_data(data_path):
 
         input_token_index = dict([(char, i) for i, char in enumerate(input_characters)])
         target_token_index = dict([(char, i) for i, char in enumerate(target_characters)])
-=======
-    input_token_index = dict([(char, i)
+    
+        input_token_index = dict([(char, i)
                               for i, char in enumerate(input_characters)])
-    target_token_index = dict([(char, i)
+        target_token_index = dict([(char, i)
                                for i, char in enumerate(target_characters)])
->>>>>>> 2d80f096fa9d4894a41cbcc7951bd0ac970c8aaf
 
         self.encoder_input_data = np.zeros(
             (len(input_texts), max_encoder_seq_length, self.num_encoder_tokens), dtype="float32"
@@ -137,7 +111,6 @@ def vectorize_data(data_path):
             (len(input_texts), max_decoder_seq_length, self.num_decoder_tokens), dtype="float32"
         )
 
-<<<<<<< HEAD
         for i, (input_text, target_text) in enumerate(zip(input_texts, target_texts)):
             for t, char in enumerate(input_text):
                 self.encoder_input_data[i, t, input_token_index[char]] = 1.0
@@ -168,22 +141,3 @@ def vectorize_data(data_path):
 train_data_encoder = one_hot_encoder("dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled.train.tsv") 
 train_data_encoder.vectorize_data()
 '''
-=======
-    for i, (input_text, target_text) in enumerate(zip(input_texts, target_texts)):
-        for t, char in enumerate(input_text):
-            encoder_input_data[i, t, input_token_index[char]] = 1.0
-        encoder_input_data[i, t + 1:, input_token_index[" "]] = 1.0
-        for t, char in enumerate(target_text):
-            # decoder_target_data is ahead of decoder_input_data by one timestep
-            decoder_input_data[i, t, target_token_index[char]] = 1.0
-            if t > 0:
-                # decoder_target_data will be ahead by one timestep
-                # and will not include the start character.
-                decoder_target_data[i, t - 1, target_token_index[char]] = 1.0
-        decoder_input_data[i, t + 1:, target_token_index[" "]] = 1.0
-        decoder_target_data[i, t:, target_token_index[" "]] = 1.0
-    return encoder_input_data, decoder_input_data, decoder_target_data
-
-# vectorize_data(
-#     data_path="dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled.train.tsv")
->>>>>>> 2d80f096fa9d4894a41cbcc7951bd0ac970c8aaf
