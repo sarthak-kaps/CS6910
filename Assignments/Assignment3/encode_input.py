@@ -43,7 +43,7 @@ def vectorize_data(data_path):
                 if char not in input_characters:
                     input_characters.add(char)
             for char in target_text:
-                if char not in target_characters and (char != '\t') and (char != '\n'):
+                if char not in target_characters:
                     target_characters.add(char)
 
     input_characters = sorted(list(input_characters))
