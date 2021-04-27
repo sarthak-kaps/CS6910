@@ -1,64 +1,77 @@
-import tensorflow as tf
-from tensorflow import keras
+from tensorflow.keras.layers import LSTM, GRU, RNN, Dense, Concatenate, TimeDistributed, Attention
+from tensorflow.keras import Input, Model
+from tensorflow.python.keras.backend import dropout
 
-def make_cell(config, **kwargs) :
-    if config.cell_type == "LSTM" :
-        return tf.keras.layers.LSTM(**kwargs, dropout = config.dropout, recurrent_dropout = config.recurrent_dropout)
-    elif config.cell_type == "GRU" :
-        return tf.keras.layers.GRU(**kwargs, dropout = config.dropout, recurrent_dropout = config.recurrent_dropout)
-    elif config.cell_type == "RNN" :
-        return tf.keras.layers.RNN(**kwargs, dropout = config.dropout, recurrent_dropout = config.recurrent_dropout)
-    else :
+
+def make_cell(config, **kwargs):
+    dispatch_dict = {"LSTM": LSTM, "GRU": GRU, "RNN": RNN}
+    layer = dispatch_dict.get(config.cell_type)
+    if(layer):
+        return layer(**kwargs, dropout=config.dropout, return_state=True, recurrent_dropout=config.recurrent_dropout)
+    else:
         raise ValueError("Invalid cell type {}", config.cell_type)
-    
 
-def make_model(config, input_shape_encoder, input_shape_decoder) :
-    encoder_inputs = tf.keras.Input(shape = (None, input_shape_encoder))
 
-    encoder_outputs = encoder_inputs
+def make_model(config, input_shape_encoder, input_shape_decoder):
+
+    encoder_inp = Input(shape=(None, input_shape_encoder))
+    prev_layer_out = encoder_inp
     encoder_states = []
-    for i in range(0, len(config.layer_dimensions)) :
-        # if it is not the last LSTM unit we need to set return_sequence = true
-        if i < len(config.layer_dimensions) - 1:
-            try :
-                encoder_outputs, h, c = make_cell(config, units = config.layer_dimensions[i], return_state = True, return_sequences = True)(encoder_outputs)
-                states = [h, c]
-            except :
-                encoder_outputs, c = make_cell(config, units = config.layer_dimensions[i], return_state = True, return_sequences = True)(encoder_outputs)
-                states = [c]
-        else :
-            try :
-                encoder_outputs, h, c = make_cell(config, units = config.layer_dimensions[i], return_state = True)(encoder_outputs)
-                states = [h, c]
-            except :
-                encoder_outputs, c = make_cell(config, units = config.layer_dimensions[i], return_state = True)(encoder_outputs)
-                states = [c]
-
+    for i in range(0, len(config.layer_dimensions)):
+        return_seqs = (i < len(config.layer_dimensions) - 1)
+        layer_output = make_cell(
+            config, units=config.layer_dimensions[i],  return_sequences=return_seqs)(prev_layer_out)
+        prev_layer_out = layer_output[0]
+        states = list(layer_output[1:])
         encoder_states.extend(list(states))
-    
-    decoder_inputs = tf.keras.Input(shape = (None, input_shape_decoder))
 
-    decoder_outputs = decoder_inputs
-    for i in range(0, len(config.layer_dimensions)) :
-        factor = 1
-        if config.cell_type == "LSTM" :
-            factor *= 2
-        
-        layer = make_cell(config, units = config.layer_dimensions[i], return_state = True, return_sequences = True) 
-        try :
-            decoder_outputs, _, _ = layer(decoder_outputs, initial_state = encoder_states[factor * i : factor * (i + 1)])
-        except :
-            decoder_outputs, _ = layer(decoder_outputs, initial_state = encoder_states[factor * i : factor * (i + 1)])
+    encoder_out = prev_layer_out
+    decoder_inp = Input(shape=(None, input_shape_decoder))
+    prev_layer_out = decoder_inp
+    for i in range(0, len(config.layer_dimensions)):
+        # Why do we always start with factor = 1?
+        factor = (2**(config.cell_type == "LSTM"))
+        layer = make_cell(
+            config, units=config.layer_dimensions[i],  return_sequences=True)
+        layer_output = layer(
+            prev_layer_out, initial_state=encoder_states[factor * i: factor * (i + 1)])
+        prev_layer_out = layer_output[0]
 
-    dropout_layer = tf.keras.layers.Dropout(config.dropout)
-    
-    decoder_outputs = dropout_layer(decoder_outputs)
+    print(encoder_out.shape, prev_layer_out.shape)
 
-    decoder_dense = tf.keras.layers.Dense(input_shape_decoder, activation = 'softmax', dropout = config.dropout)
+    if(config.attention):
+        attn_layer = Attention(
+            input_shape_encoder)
+        attn_out,  attn_states = attn_layer([encoder_out, prev_layer_out])
+        prev_layer_out = Concatenate(axis=-1)([prev_layer_out, attn_out])
 
-    decoder_outputs = decoder_dense(decoder_outputs)
+    # Why 2 adding dropout here and below too?
+    # prev_layer_out = Dropout(config.dropout)(prev_layer_out)
 
-    model = tf.keras.Model([encoder_inputs, decoder_inputs], decoder_outputs)
+    fc_layer = Dense(input_shape_decoder, activation='softmax')
+    softmax_time = TimeDistributed(fc_layer)
+    final_output = softmax_time(prev_layer_out)
+
+    model = Model(
+        [encoder_inp, decoder_inp], final_output)
 
     return model
 
+
+# class default_config:
+#     cell_type = "LSTM"
+#     layer_dimensions = [10]
+#     attention = True
+#     dropout = 0.1
+#     recurrent_dropout = 0.1
+
+
+# default_config = {
+#     "cell_type": "LSTM",
+#     "layer_dimensions": [10],
+#     "attention": False,
+#     "dropout": 0.1,
+#     "recurrent_dropout": 0.1,
+# }
+
+# model = make_model(default_config, (100, 200), (100, 200))
