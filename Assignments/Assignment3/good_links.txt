@@ -1,0 +1,14 @@
+https://towardsdatascience.com/light-on-math-ml-attention-with-keras-dc8dbc1fad39
+
+https://keras.io/api/layers/recurrent_layers/lstm/
+
+https://keras.io/examples/nlp/lstm_seq2seq/
+
+https://machinelearningmastery.com/encoder-decoder-attention-sequence-to-sequence-prediction-keras/
+
+https://www.analyticsvidhya.com/blog/2019/11/comprehensive-guide-attention-mechanism-deep-learning/
+
+
+https://distill.pub/2019/memorization-in-rnns/#appendix-autocomplete
+
+https://github.com/distillpub/post--memorization-in-rnns
