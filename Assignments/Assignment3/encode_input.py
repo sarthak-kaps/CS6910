@@ -77,18 +77,18 @@ class one_hot_encoder:
                     if char not in target_characters:
                         target_characters.add(char)
 
-        input_characters = sorted(list(input_characters))
-        target_characters = sorted(list(target_characters))
+        input_characters = sorted(list(input_characters)) + ['\n']
+        target_characters = sorted(list(target_characters)) + ['\n']
         self.num_encoder_tokens = len(input_characters)
         self.num_decoder_tokens = len(target_characters)
-        max_encoder_seq_length = max([len(txt) for txt in input_texts])
-        max_decoder_seq_length = max([len(txt) for txt in target_texts])
+        self.max_encoder_seq_length = max([len(txt) for txt in input_texts])
+        self.max_decoder_seq_length = max([len(txt) for txt in target_texts])
 
         print("Number of samples:", len(input_texts))
         print("Number of unique input tokens:", self.num_encoder_tokens)
         print("Number of unique output tokens:", self.num_decoder_tokens)
-        print("Max sequence length for inputs:", max_encoder_seq_length)
-        print("Max sequence length for outputs:", max_decoder_seq_length)
+        print("Max sequence length for inputs:", self.max_encoder_seq_length)
+        print("Max sequence length for outputs:", self.max_decoder_seq_length)
 
         input_token_index = dict([(char, i)
                                   for i, char in enumerate(input_characters)])
@@ -96,13 +96,13 @@ class one_hot_encoder:
                                    for i, char in enumerate(target_characters)])
 
         self.encoder_input_data = np.zeros(
-            (len(input_texts), max_encoder_seq_length, self.num_encoder_tokens), dtype="float32"
+            (len(input_texts), self.max_encoder_seq_length, self.num_encoder_tokens), dtype="float32"
         )
         self.decoder_input_data = np.zeros(
-            (len(input_texts), max_decoder_seq_length, self.num_decoder_tokens), dtype="float32"
+            (len(input_texts), self.max_decoder_seq_length, self.num_decoder_tokens), dtype="float32"
         )
         self.decoder_target_data = np.zeros(
-            (len(input_texts), max_decoder_seq_length, self.num_decoder_tokens), dtype="float32"
+            (len(input_texts), self.max_decoder_seq_length, self.num_decoder_tokens), dtype="float32"
         )
 
         for i, (input_text, target_text) in enumerate(zip(input_texts, target_texts)):
@@ -111,7 +111,7 @@ class one_hot_encoder:
                 # I think this line will increase error as we are passing the whole word into RNN
                 # But, after the \n char, everything will be 0.
                 # I think we should make \n default after the word end
-        #     encoder_input_data[i, t + 1 :, input_token_index["\n"]] = 1.0
+            self.encoder_input_data[i, t + 1:, input_token_index["\n"]] = 1.0
             for t, char in enumerate(target_text):
                 # decoder_target_data is ahead of decoder_input_data by one timestep
                 self.decoder_input_data[i, t, target_token_index[char]] = 1.0
@@ -120,8 +120,8 @@ class one_hot_encoder:
                     # and will not include the start character.
                     self.decoder_target_data[i, t - 1,
                                              target_token_index[char]] = 1.0
-        #     decoder_input_data[i, t + 1 :, target_token_index["\n"]] = 1.0
-        #     decoder_target_data[i, t:, target_token_index["\n"]] = 1.0
+            self.decoder_input_data[i, t + 1:, target_token_index["\n"]] = 1.0
+            self.decoder_target_data[i, t:, target_token_index["\n"]] = 1.0
 
         curr_length = 0
         encoder_input_datas = {}
@@ -134,10 +134,3 @@ class one_hot_encoder:
             decoder_target_datas[file_label] = self.decoder_target_data[curr_length: curr_length + lengths, :, :]
             curr_length += lengths
         return encoder_input_datas, decoder_input_datas, decoder_target_datas
-
-
-'''
-#sample usage example
-train_data_encoder = one_hot_encoder("dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled.train.tsv")
-encoder_input_datas, decoder_input_datas, decoder_target_datas = train_data_encoder.vectorize_data()
-'''

@@ -1,9 +1,9 @@
-import tensorflow as tf
-from tensorflow import keras
-import wandb
-from wandb.keras import WandbCallback
-import encode_input
 import model_maker
+import encode_input
+from wandb.keras import WandbCallback
+import wandb
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Wandb default config
 config_defaults = {
@@ -15,8 +15,9 @@ config_defaults = {
     "recurrent_dropout": 0.1,
     "embedding_size": 16,
     "optimizer": "adam",
-    "attention": False,
+    "attention": True
 }
+
 
 # Initialize the project
 wandb.init(project='assignment3',
@@ -27,7 +28,9 @@ wandb.init(project='assignment3',
 config = wandb.config
 
 
-wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{config.layer_dimensions}_embd_size_{config.embedding_size}_drpout_{config.dropout}_rec-drpout_{config.recurrent_dropout}_bs_{config.batch_size}_opt_{config.optimizer}"
+# config = def_config()
+
+wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{config.layer_dimensions}_embd_size_{config.embedding_size}_drpout_{config.dropout}_rec-drpout_{config.recurrent_dropout}_opt_{config.optimizer}"
 
 
 base_data_set_name = "dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled."
@@ -58,7 +61,7 @@ model.compile(
 model.fit(
     x=[encoder_input_data["train"], decoder_input_data["train"]],
     y=decoder_target_data["train"],
-    batch_size=config.batch_size,
+    # batch_size=config.batch_size,
     epochs=config.epochs,
     validation_data=([encoder_input_data["valid"],
                       decoder_input_data["valid"]], decoder_target_data["valid"]),
