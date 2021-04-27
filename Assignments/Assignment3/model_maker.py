@@ -54,7 +54,7 @@ def make_model(config, input_shape_encoder, input_shape_decoder) :
     
     decoder_outputs = dropout_layer(decoder_outputs)
 
-    decoder_dense = tf.keras.layers.Dense(input_shape_decoder, activation = 'softmax', dropout = config.dropout)
+    decoder_dense = tf.keras.layers.Dense(input_shape_decoder, activation = 'softmax')
 
     decoder_outputs = decoder_dense(decoder_outputs)
 
