@@ -133,4 +133,12 @@ class one_hot_encoder:
             decoder_input_datas[file_label] = self.decoder_input_data[curr_length: curr_length + lengths, :, :]
             decoder_target_datas[file_label] = self.decoder_target_data[curr_length: curr_length + lengths, :, :]
             curr_length += lengths
+       
+
+        # for ease of access later
+        self.input_texts = input_texts
+        self.target_texts = target_texts
+        self.input_token_index = input_token_index
+        self.target_token_index = target_token_index
+
         return encoder_input_datas, decoder_input_datas, decoder_target_datas
