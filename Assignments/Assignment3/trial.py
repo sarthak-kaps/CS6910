@@ -11,7 +11,7 @@ class FeedBack(tf.keras.Model):
             self.config.layer_dimension, recurrent_dropout=config.recurrent_dropout)
         # Also wrap the LSTMCell in an RNN to simplify the `warmup` method.
         self.lstm_rnn = tf.keras.layers.RNN(
-            self.lstm_cell, return_state=True, return_sequences=True, unroll=True)
+            self.lstm_cell, return_state=True, unroll=True)
         self.dense = tf.keras.layers.Dense(dec_vsize)
         self.dec_timesteps = dec_timesteps
         self.dec_vsize = dec_vsize
@@ -47,7 +47,7 @@ class FeedBack(tf.keras.Model):
             prediction = self.dense(x)
             # Add the prediction to the output
             predictions.append(prediction)
-            if((np.argmax(prediction) == 0) or (i == self.dec_timesteps)):
+            if((np.argmax(prediction) == 0) or (i == self.dec_timesteps - 1)):
                 break
 
             i += 1
@@ -68,8 +68,10 @@ if __name__ == "__main__":
         dropout = 0.1
         recurrent_dropout = 0.1
 
+    inp = tf.keras.layers.Input(shape=(32, 11, 12))
     f = FeedBack(default_config(), 11, 12)
-    a = np.ones((1, 11, 12))
-    p = f(a)
+    a = np.ones((32, 11, 12))
+    p = f(inp)
+    p.fit(a)
     # print(p)
-    print(p.shape)
+    # print(p.shape)

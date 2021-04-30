@@ -11,12 +11,12 @@ from tqdm import tqdm
 
 class default_config:
     cell_type = "LSTM"
-    layer_dimensions = [128]
+    layer_dimensions = [128, 64]
     attention = False
     dropout = 0.1
     recurrent_dropout = 0.1
     optimizer = "adam"
-    batch_size = None
+    batch_size = 128
     epochs = 10
 
 
@@ -32,7 +32,7 @@ data_encoder = encode_input.one_hot_encoder(
     decoder_target_data, input_texts_dict, target_texts_dict] = data_encoder.vectorize_data()
 
 
-model = keras.models.load_model("model1")
+model = keras.models.load_model("model2")
 
 
 encoder_model, decoder_model = model_maker_inference.make_inference_model(
@@ -84,14 +84,16 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
 
 
 accuracy = 0
-
+input_seqs = encoder_input_data["valid"]
+target_sents = target_texts_dict["valid"]
 for seq_index in tqdm(range(len(encoder_input_data["valid"]))):
     # Take one sequence (part of the training set)
     # for trying out decoding.
-    input_seq = encoder_input_data["valid"][seq_index: seq_index + 1]
+    input_seq = input_seqs[seq_index]
     decoded_sentence = decode_sequence(
         input_seq, encoder_model, decoder_model)[:-1]
-    target_sentence = target_texts_dict["valid"][seq_index: seq_index + 1][0][1:-1]
+    target_sentence = target_sents[seq_index][0][1:-1]
+
     if(decoded_sentence == target_sentence):
         accuracy += 1
 
