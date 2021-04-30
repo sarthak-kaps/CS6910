@@ -1,17 +1,17 @@
-import tensorflow as tf
-from tensorflow import keras
-import wandb
+import numpy as np
+from tqdm import tqdm
 from wandb.keras import WandbCallback
+
 import encode_input
 import model_maker
 import model_maker_inference
-import numpy as np
+import wandb
 
 # Wandb default config
 config_defaults = {
-    "epochs": 10,
+    "epochs": 1,
     "batch_size": 128,
-    "layer_dimensions": [128, 64],
+    "layer_dimensions": [16],
     "cell_type": "LSTM",
     "dropout": 0.1,
     "recurrent_dropout": 0.1,
@@ -28,7 +28,7 @@ wandb.init(project='assignment3',
 config = wandb.config
 
 
-wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{"".join(config.layer_dimensions)}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
+wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{''.join([str(i) for i in config.layer_dimensions])}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
 
 
 base_data_set_name = "dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled."
@@ -53,8 +53,9 @@ print(model.summary())
 
 # compile the model
 model.compile(
-    optimizer=config.optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
+    optimizer=config.optimizer, loss="categorical_crossentropy",  metrics=['accuracy']
 )
+
 
 # fit the model
 model.fit(
@@ -96,8 +97,10 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
     # Creating a list then using "".join() is usually much faster for string creation
     decoded_sentence = []
     while not stop_condition:
-        to_split = decoder_model.predict([target_seq] + states_value)
-
+        if type(states_value) != list:
+            to_split = decoder_model.predict([target_seq]+[states_value])
+        else:
+            to_split = decoder_model.predict([target_seq]+states_value)
         output_tokens, states_value = to_split[0], to_split[1:]
 
         # Sample a token
@@ -118,16 +121,23 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
     return "".join(decoded_sentence)
 
 
-for seq_index in range(20):
+input_seqs = encoder_input_data["valid"][:20]
+target_sents = target_texts_dict["valid"][:20]
+
+acc = 0
+for seq_index in tqdm(range(len(input_seqs))):
     # Take one sequence (part of the training set)
     # for trying out decoding.
-    input_seq = encoder_input_data["valid"][seq_index: seq_index + 1]
+    input_seq = input_seqs[seq_index:seq_index+1]
     decoded_sentence = decode_sequence(
         input_seq, encoder_model, decoder_model)[:-1]
-    target_sentence = target_texts_dict["valid"][seq_index: seq_index + 1][0][1:-1]
-    print("-")
-    print("Input sentence:",
-          input_texts_dict["valid"][seq_index: seq_index + 1])
-    print("Decodd sentence:", decoded_sentence)
-    print("Target sentence:",
-          target_sentence)
+    target_sentence = target_sents[seq_index:seq_index+1][0][1:-1]
+    if(seq_index < 20):
+        wandb.log({f"input_{seq_index}": input_seq, f"output_{seq_index}": decoded_sentence,
+                   f"target_{seq_index}": target_sentence})
+    if(str(target_sentence) == str(input_seq)):
+        acc += 1
+
+acc /= len(input_seqs)
+print("\n", acc)
+wandb.log({"val_accuracy": acc})

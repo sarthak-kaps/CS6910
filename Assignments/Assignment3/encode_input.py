@@ -64,7 +64,7 @@ class one_hot_encoder:
             lines = f.read().split("\n")
 
             for line in lines[:len(lines) - 1]:
-                input_text, target_text, _ = line.split("\t")
+                target_text, input_text, _ = line.split("\t")
                 # We use "tab" as the "start sequence" character
                 # for the targets, and "\n" as "end sequence" character.
                 target_text = "\t" + target_text + "\n"
