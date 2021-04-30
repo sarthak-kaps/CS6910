@@ -1,5 +1,4 @@
 from tensorflow.keras.layers import LSTM, GRU, RNN, Dense, Concatenate, TimeDistributed, Dropout
-from tensorflow.python.keras.layers.dense_attention import Attention
 from attention import AttentionLayer
 from tensorflow.keras import Input, Model
 from tensorflow.python.keras.backend import dropout
@@ -16,13 +15,13 @@ def make_cell(config, **kwargs):
 
 def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
     encoder_inp = Input(
-        shape=(enc_timesteps, enc_vsize), name='encoder_inputs')
-    if dec_timesteps:
-        decoder_inp = Input(
-            shape=(dec_timesteps, dec_vsize), name='decoder_inputs')
-    else:
-        decoder_inp = Input(
-            shape=(None, dec_vsize), name='decoder_inputs')
+        shape=(None, enc_vsize), name='encoder_inputs')
+    # if dec_timesteps:
+    #     decoder_inp = Input(
+    #         shape=(dec_timesteps, dec_vsize), name='decoder_inputs')
+    # else:
+    decoder_inp = Input(
+        shape=(None, dec_vsize), name='decoder_inputs')
 
     prev_layer_out = encoder_inp
     encoder_states = []

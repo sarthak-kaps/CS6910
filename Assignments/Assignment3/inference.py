@@ -44,7 +44,7 @@ data_encoder = encode_input.one_hot_encoder(
 # To obtain the encoder input for train data do encoder_input_data["train"]
 # To obtain the decoder input for validation data do decoder_input_data["valid"]
 [encoder_input_data, decoder_input_data,
-    decoder_target_data] = data_encoder.vectorize_data()
+    decoder_target_data, input_texts_dict, target_texts_dict] = data_encoder.vectorize_data()
 
 # construct the model from the given configurations
 model = model_maker.make_model(
@@ -62,34 +62,39 @@ model.fit(
     y=decoder_target_data["train"],
     batch_size=config.batch_size,
     epochs=config.epochs,
-    validation_data=([encoder_input_data["valid"],
-                      decoder_input_data["valid"]], decoder_target_data["valid"]),
+    # validation_data=([encoder_input_data["valid"],
+    #                   decoder_input_data["valid"]], decoder_target_data["valid"]),
     callbacks=[WandbCallback()]
 )
 
 # Save model
 model.save(wandb.run.name)
 
-encoder_model, decoder_model = model_maker_inference.make_inference_model(model, config)
+encoder_model, decoder_model = model_maker_inference.make_inference_model(
+    model, config)
 
 # Reverse-lookup token index to decode sequences back to
 # something readable.
-reverse_input_char_index = dict((i, char) for char, i in data_encoder.input_token_index.items())
-reverse_target_char_index = dict((i, char) for char, i in data_encoder.target_token_index.items())
+reverse_input_char_index = dict(
+    (i, char) for char, i in data_encoder.input_token_index.items())
+reverse_target_char_index = dict(
+    (i, char) for char, i in data_encoder.target_token_index.items())
+
 
 def decode_sequence(input_seq, encoder_model, decoder_model):
     # Encode the input as state vectors.
     states_value = encoder_model.predict(input_seq)
 
     # Generate empty target sequence of length 1.
-    target_seq = np.zeros((1, 22, data_encoder.num_decoder_tokens))
+    target_seq = np.zeros((1, 1, data_encoder.num_decoder_tokens))
     # Populate the first character of target sequence with the start character.
     target_seq[0, 0, data_encoder.target_token_index['\t']] = 1.
 
     # Sampling loop for a batch of sequences
     # (to simplify, here we assume a batch of size 1).
     stop_condition = False
-    decoded_sentence = []  #Creating a list then using "".join() is usually much faster for string creation
+    # Creating a list then using "".join() is usually much faster for string creation
+    decoded_sentence = []
     while not stop_condition:
         to_split = decoder_model.predict([target_seq] + states_value)
 
@@ -107,23 +112,18 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
             stop_condition = True
 
         # Update the target sequence (of length 1).
-        target_seq = np.zeros((1, 22, data_encoder.num_decoder_tokens))
+        target_seq = np.zeros((1, 1, data_encoder.num_decoder_tokens))
         target_seq[0, 0, sampled_token_index] = 1.
 
     return "".join(decoded_sentence)
 
+
 for seq_index in range(20):
     # Take one sequence (part of the training set)
     # for trying out decoding.
-    input_seq = encoder_input_data["valid"][seq_index : seq_index + 1]
+    input_seq = encoder_input_data["valid"][seq_index: seq_index + 1]
     decoded_sentence = decode_sequence(input_seq, encoder_model, decoder_model)
     print("-")
-    print("Input sentence:", data_encoder.input_texts[seq_index])
+    print("Input sentence:",
+          input_texts_dict["valid"][seq_index: seq_index + 1])
     print("Decoded sentence:", decoded_sentence)
-
-
-
-
-
-
-

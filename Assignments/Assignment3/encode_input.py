@@ -127,18 +127,26 @@ class one_hot_encoder:
         encoder_input_datas = {}
         decoder_input_datas = {}
         decoder_target_datas = {}
+        input_texts_dict = {}
+        target_texts_dict = {}
 
         for (lengths, file_label) in zip(file_lengths, self.file_labels):
-            encoder_input_datas[file_label] = self.encoder_input_data[curr_length: curr_length + lengths, :, :]
-            decoder_input_datas[file_label] = self.decoder_input_data[curr_length: curr_length + lengths, :, :]
-            decoder_target_datas[file_label] = self.decoder_target_data[curr_length: curr_length + lengths, :, :]
+            shuffler = np.random.permutation(lengths)
+            encoder_input_datas[file_label] = self.encoder_input_data[curr_length: curr_length +
+                                                                      lengths, :, :][shuffler]
+            decoder_input_datas[file_label] = self.decoder_input_data[curr_length: curr_length +
+                                                                      lengths, :, :][shuffler]
+            decoder_target_datas[file_label] = self.decoder_target_data[curr_length: curr_length +
+                                                                        lengths, :, :][shuffler]
+            input_texts_dict[file_label] = np.array(input_texts[curr_length: curr_length +
+                                                                lengths])[shuffler]
+            target_texts_dict[file_label] = np.array(target_texts[curr_length: curr_length +
+                                                                  lengths])[shuffler]
             curr_length += lengths
-       
 
         # for ease of access later
-        self.input_texts = input_texts
-        self.target_texts = target_texts
+
         self.input_token_index = input_token_index
         self.target_token_index = target_token_index
 
-        return encoder_input_datas, decoder_input_datas, decoder_target_datas
+        return encoder_input_datas, decoder_input_datas, decoder_target_datas, input_texts_dict, target_texts_dict
