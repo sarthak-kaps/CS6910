@@ -1,11 +1,11 @@
-from tensorflow.keras.layers import LSTM, GRU, RNN, Dense, Concatenate, TimeDistributed, Dropout
-from attention import AttentionLayer
 from tensorflow.keras import Input, Model
-from tensorflow.python.keras.backend import dropout
+from tensorflow.keras.layers import (GRU, LSTM, Concatenate, Dense, Dropout,
+                                     SimpleRNN, TimeDistributed)
+from attention import AttentionLayer
 
 
 def make_cell(config, **kwargs):
-    dispatch_dict = {"LSTM": LSTM, "GRU": GRU, "RNN": RNN}
+    dispatch_dict = {"LSTM": LSTM, "GRU": GRU, "RNN": SimpleRNN}
     layer = dispatch_dict.get(config.cell_type)
     if(layer):
         return layer(**kwargs, dropout=config.dropout, return_state=True, return_sequences=True, recurrent_dropout=config.recurrent_dropout)
