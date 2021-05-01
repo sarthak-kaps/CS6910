@@ -1,0 +1,63 @@
+program: sweep.py
+command:
+  - python
+  - ${program}
+  - ${args}
+method: bayes
+metric:
+  goal: minimize
+  name: loss
+parameters:
+  layer_dimensions:
+    distribution: categorical
+    values:
+      - [128]
+      - [128, 64]
+      - [256]
+      - [256,128]
+      - [64,64,64]
+      - [64,64]
+  epochs:
+    distribution: categorical
+    values:
+    - 10
+    - 15
+    - 20
+  batch_size:
+    distribution: categorical
+    values:
+    - 64
+    - 128
+    - 256
+  cell_type :
+    distribution: categorical
+    values:
+    - LSTM
+    - GRU
+    - RNN
+  dropout:
+    distribution: categorical
+    values:
+    - 0
+    - 0.1
+    - 0.2
+  recurrent_dropout:
+    distribution: categorical
+    values:
+    - 0
+    - 0.1
+    - 0.2
+  attention:
+    distribution: categorical
+    values:
+    - True
+  optimizer:
+    distribution: categorical
+    values:
+    - "adam"
+    - "rmsprop"
+early_terminate:
+  eta: 3
+  max_iter: 27
+  s: 2
+  type: hyperband
