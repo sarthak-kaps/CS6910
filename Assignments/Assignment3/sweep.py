@@ -6,6 +6,7 @@ from wandb.keras import WandbCallback
 import encode_input
 import model_maker
 import model_maker_inference
+import beam_search
 import wandb
 
 # Wandb default config
@@ -17,6 +18,7 @@ config_defaults = {
     "dropout": 0.1,
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
+    "beam_width" : 1,
     "attention": False,
 }
 
@@ -29,7 +31,7 @@ wandb.init(project='assignment3',
 config = wandb.config
 
 
-wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{''.join([str(i) for i in config.layer_dimensions])}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
+wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{config.layer_dimensions}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
 
 
 base_data_set_name = "dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled."
@@ -70,7 +72,7 @@ model.fit(
 )
 
 # Save model
-# model.save(wandb.run.name)
+model.save(wandb.run.name)
 
 encoder_model, decoder_model = model_maker_inference.make_inference_model(
     model, config)
@@ -159,21 +161,49 @@ input_seqs = encoder_input_data["valid"]
 target_sents = target_texts_dict["valid"]
 n = len(input_seqs)
 val_avg_edit_dist = 0
-for seq_index in tqdm(range(100)):
-    # Take one sequence (part of the training set)
-    # for trying out decoding.
-    input_seq = input_seqs[seq_index:seq_index+1]
-    decoded_sentence = str(decode_sequence(
-        input_seq, encoder_model, decoder_model)[:-1])
-    target_sentence = str(target_sents[seq_index:seq_index+1][0][1:-1])
-    edit_dist = editDistance(decoded_sentence, target_sentence, len(
-        decoded_sentence), len(target_sentence))/len(target_sentence)
-    val_avg_edit_dist += edit_dist
-    if(seq_index < 20):
-        wandb.log({f"input_{seq_index}": input_seq, f"output_{seq_index}": decoded_sentence,
-                   f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
 
-val_avg_edit_dist /= 100
+if config.beam_width > 1 :
+    # make the beam search object
+    bs = beam_search.BeamSearch(config.beam_width, data_encoder.max_decoder_seq_length, data_encoder.target_token_index)
+    
+    for seq_index in tqdm(range(0, 100)):
+        # Take one sequence (part of the training set)
+        # for trying out decoding.
+        input_seq = input_seqs[seq_index:seq_index+1]
+        decoded_sentence = bs.apply(encoder_model, decoder_model, input_seq)
+        target_sentence = str(target_sents[seq_index:seq_index+1][0][1:-1])
+    #     print(input_texts_dict["valid"][seq_index], target_sentence)
+        decoded_sentence = "".join(decoded_sentence[0].characters[1:-1])
+        
+        edit_dist = editDistance(decoded_sentence, target_sentence, len(
+            decoded_sentence), len(target_sentence))/len(target_sentence)
+        val_avg_edit_dist += edit_dist
+        if(seq_index < 20):
+            wandb.log({f"input_{seq_index}": input_seq, f"output_{seq_index}": decoded_sentence,
+                       f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
 
-wandb.log({"val_avg_edit_dist": val_avg_edit_dist,
-           "val_total_edit_dist": val_avg_edit_dist*100})
+    val_avg_edit_dist /= 100
+
+    wandb.log({"val_avg_edit_dist": val_avg_edit_dist,
+               "val_total_edit_dist": val_avg_edit_dist*100})
+
+
+else :
+    for seq_index in tqdm(range(100)):
+        # Take one sequence (part of the training set)
+        # for trying out decoding.
+        input_seq = input_seqs[seq_index:seq_index+1]
+        decoded_sentence = str(decode_sequence(
+            input_seq, encoder_model, decoder_model)[:-1])
+        target_sentence = str(target_sents[seq_index:seq_index+1][0][1:-1])
+        edit_dist = editDistance(decoded_sentence, target_sentence, len(
+            decoded_sentence), len(target_sentence))/len(target_sentence)
+        val_avg_edit_dist += edit_dist
+        if(seq_index < 20):
+            wandb.log({f"input_{seq_index}": input_seq, f"output_{seq_index}": decoded_sentence,
+                       f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
+
+    val_avg_edit_dist /= 100
+
+    wandb.log({"val_avg_edit_dist": val_avg_edit_dist,
+               "val_total_edit_dist": val_avg_edit_dist*100})
