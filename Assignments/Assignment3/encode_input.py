@@ -3,6 +3,8 @@ from tensorflow import keras
 import numpy as np
 import pandas as pd
 
+np.random.seed(1337)
+
 # convert files into csv for better readability
 
 
@@ -90,6 +92,9 @@ class one_hot_encoder:
         print("Max sequence length for inputs:", self.max_encoder_seq_length)
         print("Max sequence length for outputs:", self.max_decoder_seq_length)
 
+        # Adjusting timesteps for better attention
+        self.max_decoder_seq_length = self.max_encoder_seq_length = max(
+            self.max_encoder_seq_length, self.max_decoder_seq_length)
         input_token_index = dict([(char, i)
                                   for i, char in enumerate(input_characters)])
         target_token_index = dict([(char, i)
