@@ -1,7 +1,8 @@
 from tensorflow.keras import Input, Model
 from tensorflow.keras.layers import (GRU, LSTM, Dense, Dropout,
                                      SimpleRNN, TimeDistributed, Layer)
-from tensorflow import expand_dims, reduce_sum, multiply, concat, split, nn
+from tensorflow import expand_dims, reduce_sum, multiply, concat, split, nn, reduce_mean
+from tensorflow import print as pr
 from numpy import zeros
 
 
@@ -32,24 +33,26 @@ class BahdanauAttention(Layer):
             context_vector = reduce_sum(context_vector, axis=1)
             return context_vector, attention_weights
         else:
-            # values : (batch_size, max_len, hidden_size)
-            # query : (batch_size, max_len, hidden_size)
+            # query : (batch_size, max_len2, hidden_size)
+            # values : (batch_size, max_len1, hidden_size)
+            query = expand_dims(query, 2)
+            values = expand_dims(values, 1)
+
             s1 = self.W1(query)
             s2 = self.W2(values)
-            s1 = expand_dims(s1, 2)
-            s2 = expand_dims(s2, 1)
-            # s1 : (batch_size, max_len,1, units)
-            # s2 : (batch_size, 1,max_len, units)
+            # s1 : (batch_size, max_len2,1, units)
+            # s2 : (batch_size, 1,max_len1, units)
             tsum = s1+s2
-            # tsum : (batch_size, max_len, max_len, units)
+            # tsum : (batch_size, max_len2, max_len1, units)
             score = self.V(nn.tanh(tsum))
-            # score : (batch_size, max_len, max_len, 1)
+            # score : (batch_size, max_len2, max_len1, 1)
             attention_weights = nn.softmax(score, axis=2)
-            # attention_weights : (batch_size, max_len, max_len, 1)
-            # values : (batch_size, max_len, hidden_size)
-            context_vector = attention_weights * expand_dims(values, axis=1)
+            # attention_weights : (batch_size, max_len2, max_len1,1)
+            # values : (batch_size, 1,max_len1, hidden_size)
+            context_vector = attention_weights * values
+            # context_vector : (batch_size, max_len2, max_len1, hidden_size)
             context_vector = reduce_sum(context_vector, axis=2)
-            # context_vector : (batch_Size, max_len, hidden_size)
+            # context_vector : (batch_Size, max_len2, hidden_size)
             return context_vector, attention_weights
 
 
@@ -84,7 +87,6 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
     # Add attention layer
     # Attention layer will take last encoder layer output and decoder input as input
     # We will combine the attention context with decoder input
-
     # Create decoder layers
     dec_layers, dec_outs, dec_states = [], [], []
     prev_layer_out = dec_inputs
@@ -169,11 +171,9 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
         inf_dec_states.append(inf_dec_lstm_states)
 
     # Use the attention layer to get the context
-    # print(prev_layer_out.shape)
-    prev_layer_out = reduce_sum(prev_layer_out, axis=1)
+    # prev_layer_out = reduce_sum(prev_layer_out, axis=1)
     attn_context, attn_weights = attn(
         prev_layer_out, inf_enc_out)
-    # print(attn_context.shape, attn_weights.shape)
     if(config.attention):
         prev_layer_out = multiply(
             attn_context, prev_layer_out)
@@ -181,8 +181,7 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
     # Add dropout
     inf_dec_dropout = dec_dropout(prev_layer_out)
     inf_dec_output = TimeDistributed(dec_dense)(
-        expand_dims(inf_dec_dropout, axis=1))
-    # print(inf_dec_output.shape)
+        inf_dec_dropout)
 
     # Inference decoder model is ready
     inf_dec_model = Model([inf_dec_inputs,
@@ -201,7 +200,7 @@ if __name__ == "__main__":
         recurrent_dropout = 0.1
 
     full_model, inf_enc_model, inf_dec_model = make_model(
-        default_config(), 20, 30, 20, 30)
+        default_config(), 20, 30, 21, 31)
     # print(full_model.summary())
     # print(inf_enc_model.summary())
     # print(inf_dec_model.summary())

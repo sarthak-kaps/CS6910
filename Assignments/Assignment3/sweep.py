@@ -9,18 +9,19 @@ import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '10'
 val_samples = 20
+train_samples = 1000000
 
 # Wandb default config
 config_defaults = {
-    "epochs": 10,
-    "batch_size": 64,
+    "epochs": 50,
+    "batch_size": 128,
     "layer_dimensions": [128],
-    "cell_type": "LSTM",
+    "cell_type": "GRU",
     "dropout": 0.1,
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
     "attention": True,
-    "attention_shape": 128
+    "attention_shape": 256
 }
 
 # Initialize the project
@@ -63,8 +64,9 @@ model.compile(
 
 # fit the model
 model.fit(
-    x=[encoder_input_data["train"], decoder_input_data["train"]],
-    y=decoder_target_data["train"],
+    x=[encoder_input_data["train"][:train_samples],
+        decoder_input_data["train"][:train_samples]],
+    y=decoder_target_data["train"][:train_samples],
     batch_size=config.batch_size,
     epochs=config.epochs,
     # validation_data=([encoder_input_data["valid"],

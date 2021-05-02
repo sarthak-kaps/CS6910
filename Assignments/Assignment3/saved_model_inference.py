@@ -8,7 +8,7 @@ import matplotlib.ticker as ticker
 import encode_input
 import wandb
 
-val_samples = 100
+val_samples = 400
 base_data_set_name = "dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled."
 
 data_encoder = encode_input.one_hot_encoder(
@@ -32,15 +32,14 @@ reverse_target_char_index = dict(
 
 
 def decode_sequence(input_seq, encoder_model, decoder_model):
-    attention_plot = np.zeros((input_seq.shape[1], input_seq.shape[1]))
+    attention_plot = np.zeros(
+        (data_encoder.max_decoder_seq_length, data_encoder.max_encoder_seq_length))
     # Encode the input as state vectors.
     states_value, enc_out = encoder_model.predict(input_seq)
-
     # Generate empty target sequence of length 1.
     target_seq = np.zeros((1, 1, data_encoder.num_decoder_tokens))
     # Populate the first character of target sequence with the start character.
     target_seq[0, 0, data_encoder.target_token_index['\t']] = 1.
-
     # Sampling loop for a batch of sequences
     # (to simplify, here we assume a batch of size 1).
     stop_condition = False
@@ -52,7 +51,6 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
             [target_seq, states_value, enc_out])
         output_tokens, states_value, attn_weights = to_split[0], list(
             to_split[1:-1]), to_split[-1]
-
         attention_weights = reshape(attn_weights, (-1, ))
         attention_plot[i] = attention_weights.numpy()
         # Sample a token
@@ -60,17 +58,15 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
         sampled_token_index = np.argmax(output_tokens[0, 0])
         sampled_char = reverse_target_char_index[sampled_token_index]
         decoded_sentence.append(sampled_char)
-
         # Exit condition: either hit max length
         # or find stop character.
         if sampled_char == '\n' or len(decoded_sentence) > data_encoder.max_decoder_seq_length:
             stop_condition = True
-
         # Update the target sequence (of length 1).
         target_seq = np.zeros((1, 1, data_encoder.num_decoder_tokens))
         target_seq[0, 0, sampled_token_index] = 1.
         i += 1
-
+    attention_plot = attention_plot[:len(decoded_sentence)]
     return "".join(decoded_sentence), attention_plot
 
 
@@ -112,26 +108,23 @@ def editDistance(str1, str2, m, n):
 def plot_attention(attention, sentence, predicted_sentence):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(1, 1, 1)
-
     # attention = attention[:len(predicted_sentence), :len(sentence)]
     ax.matshow(attention, cmap='viridis')
-
     fontdict = {'fontsize': 14}
-
     ax.set_xticklabels([''] + list(sentence), fontdict=fontdict, rotation=90)
     ax.set_yticklabels([''] + list(predicted_sentence), fontdict=fontdict)
-
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
-
     plt.show()
 
 
 input_seqs = encoder_input_data["valid"]
 target_sents = target_texts_dict["valid"]
+input_sents = input_texts_dict["valid"]
 n = len(input_seqs)
 val_avg_edit_dist = 0
-for seq_index in tqdm(range(val_samples)):
+acc = 0
+for seq_index in range(val_samples):
     # Take one sequence (part of the training set)
     # for trying out decoding.
     input_seq = input_seqs[seq_index:seq_index+1]
@@ -142,12 +135,16 @@ for seq_index in tqdm(range(val_samples)):
     edit_dist = editDistance(decoded_sentence, target_sentence, len(
         decoded_sentence), len(target_sentence))/len(target_sentence)
     val_avg_edit_dist += edit_dist
-    if(seq_index < 5):
-        plot_attention(attention_plot, target_sentence, decoded_sentence)
-    if(seq_index < 20):
-        print({f"output_{seq_index}": decoded_sentence,
-               f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
+    if(decoded_sentence == target_sentence):
+        acc += 1
+    if(seq_index < 0):
+        plot_attention(
+            attention_plot, input_sents[seq_index], decoded_sentence)
+    # if(seq_index < 20):
+    print({f"output_{seq_index}": decoded_sentence,
+           f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
 
 val_avg_edit_dist /= val_samples
+acc /= val_samples
 
-print({"val_avg_edit_dist": val_avg_edit_dist})
+print({"val_avg_edit_dist": val_avg_edit_dist, "val_acc": acc})
