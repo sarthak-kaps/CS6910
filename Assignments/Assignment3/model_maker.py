@@ -1,6 +1,6 @@
 from tensorflow.keras import Input, Model
 from tensorflow.keras.layers import (GRU, LSTM, Concatenate, Dense, Dropout,
-                                     SimpleRNN, TimeDistributed, Layer)
+                                     SimpleRNN, TimeDistributed, Layer, RepeatVector)
 from tensorflow import expand_dims, reduce_sum, multiply, concat, split, nn
 from numpy import zeros
 
@@ -13,13 +13,44 @@ class BahdanauAttention(Layer):
         self.V = Dense(1)
 
     def call(self, query, values):
-        query_with_time_axis = expand_dims(query, axis=1)
-        score = self.V(nn.tanh(
-            self.W1(query_with_time_axis) + self.W2(values)))
-        attention_weights = nn.softmax(score, axis=1)
-        context_vector = attention_weights * values
-        context_vector = reduce_sum(context_vector, axis=1)
-        return context_vector, attention_weights
+
+        if(len(query.shape) == 2):
+            # values : (batch_size, max_len, hidden_size)
+            # query : (batch_size, hidden_size)
+            query = expand_dims(query, 1)
+            s1 = self.W1(query)
+            # s1 : (batch_size, 1, units)
+            # s2 : (batch_size, max_len, units)
+            s2 = self.W2(values)
+            # score : (batch_size, max_len, 1)
+            score = self.V(nn.tanh(s1 + s2))
+            # attention_weights : (batch_size, max_len, 1)
+            attention_weights = nn.softmax(score, axis=1)
+            # context_vector : (batch_size, max_len, hidden_size)
+            context_vector = attention_weights * values
+            # context_vector : (batch_size, hidden_size)
+            context_vector = reduce_sum(context_vector, axis=1)
+            return context_vector, attention_weights
+        else:
+            # values : (batch_size, max_len, hidden_size)
+            # query : (batch_size, max_len, hidden_size)
+            s1 = self.W1(query)
+            s2 = self.W2(values)
+            s1 = expand_dims(s1, 2)
+            s2 = expand_dims(s2, 1)
+            # s1 : (batch_size, max_len,1, units)
+            # s2 : (batch_size, 1,max_len, units)
+            tsum = s1+s2
+            # tsum : (batch_size, max_len, max_len, units)
+            score = self.V(nn.tanh(tsum))
+            # score : (batch_size, max_len, max_len, 1)
+            attention_weights = nn.softmax(score, axis=2)
+            # attention_weights : (batch_size, max_len, max_len, 1)
+            # values : (batch_size, max_len, hidden_size)
+            context_vector = attention_weights * expand_dims(values, axis=1)
+            context_vector = reduce_sum(context_vector, axis=2)
+            # context_vector : (batch_Size, max_len, hidden_size)
+            return context_vector, attention_weights
 
 
 def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
@@ -54,13 +85,7 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
     # Attention layer will take last encoder layer output and decoder input as input
     # We will combine the attention context with decoder input
     dec_final_inputs = dec_inputs
-    attn = BahdanauAttention(config.attention_shape)
-    attn_context, attn_weights = attn(
-        enc_lstm_states, dec_final_inputs)
-    if(config.attention):
-        dec_final_inputs = multiply(
-            expand_dims(attn_context, axis=1), dec_final_inputs)
-    # print(dec_final_inputs.shape)
+
     # Create decoder layers
     dec_layers, dec_outs, dec_states = [], [], []
     prev_layer_out = dec_final_inputs
@@ -75,6 +100,14 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
         dec_layers.append(dec_lstm)
         dec_outs.append(dec_lstm_out)
         dec_states.append(dec_lstm_states)
+
+    attn = BahdanauAttention(config.attention_shape)
+    attn_context, attn_weights = attn(
+        prev_layer_out, enc_lstm_out)
+    print(attn_context.shape, attn_weights.shape)
+    if(config.attention):
+        prev_layer_out = multiply(
+            attn_context, prev_layer_out)
 
     # Add dropout layer
     dec_dropout = Dropout(config.dropout, name="dropout")
@@ -125,13 +158,7 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
     inf_enc_out = Input(
         shape=(enc_timesteps, latent_dims[nlayers-1]), name="Inference_encoder_output")
 
-    # Use the attention layer to get the context
     inf_dec_final_inputs = inf_dec_inputs
-    attn_context, attn_weights = attn(inf_dec_init_states[-1], inf_dec_inputs)
-    if(config.attention):
-        inf_dec_final_inputs = multiply(
-            expand_dims(attn_context, axis=1), inf_dec_inputs)
-
     # Use the decoder layers from training and collect their states
     # These states will be passed for each char separately
     prev_layer_out = inf_dec_final_inputs
@@ -143,6 +170,15 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
             inf_dec_lstm_out[1:]), axis=-1), inf_dec_lstm_out[0]
         prev_layer_out = inf_dec_lstm_out
         inf_dec_states.append(inf_dec_lstm_states)
+
+    # Use the attention layer to get the context
+
+    attn_context, attn_weights = attn(
+        prev_layer_out, inf_enc_out)
+    print(attn_context.shape, attn_weights.shape)
+    if(config.attention):
+        prev_layer_out = multiply(
+            attn_context, prev_layer_out)
 
     # Add dropout
     inf_dec_dropout = dec_dropout(prev_layer_out)
@@ -158,9 +194,10 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
 
 if __name__ == "__main__":
     class default_config:
-        cell_type = "GRU"
-        layer_dimensions = [10, 11]
+        cell_type = "LSTM"
+        layer_dimensions = [128]
         attention = True
+        attention_shape = 64
         dropout = 0.1
         recurrent_dropout = 0.1
 

@@ -8,7 +8,7 @@ import matplotlib.ticker as ticker
 import encode_input
 import wandb
 
-
+val_samples = 100
 base_data_set_name = "dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled."
 
 data_encoder = encode_input.one_hot_encoder(
@@ -18,9 +18,9 @@ data_encoder = encode_input.one_hot_encoder(
     decoder_target_data, input_texts_dict, target_texts_dict] = data_encoder.vectorize_data()
 
 
-model = keras.models.load_model("model2/train")
-inf_enc_model = keras.models.load_model("model2/inf-enc")
-inf_dec_model = keras.models.load_model("model2/inf-dec")
+model = keras.models.load_model("model_1/train")
+inf_enc_model = keras.models.load_model("model_1/inf-enc")
+inf_dec_model = keras.models.load_model("model_1/inf-dec")
 
 
 # Reverse-lookup token index to decode sequences back to
@@ -53,6 +53,7 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
         output_tokens, states_value, attn_weights = to_split[0], list(
             to_split[1:-1]), to_split[-1]
 
+        # print(attn_weights.shape)
         attention_weights = reshape(attn_weights, (-1, ))
         attention_plot[i] = attention_weights.numpy()
 
@@ -113,12 +114,14 @@ def editDistance(str1, str2, m, n):
 def plot_attention(attention, sentence, predicted_sentence):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(1, 1, 1)
+
+    attention = attention[:len(predicted_sentence), :len(sentence)]
     ax.matshow(attention, cmap='viridis')
 
     fontdict = {'fontsize': 14}
 
-    ax.set_xticklabels([''] + sentence, fontdict=fontdict, rotation=90)
-    ax.set_yticklabels([''] + predicted_sentence, fontdict=fontdict)
+    ax.set_xticklabels([''] + list(sentence), fontdict=fontdict, rotation=90)
+    ax.set_yticklabels([''] + list(predicted_sentence), fontdict=fontdict)
 
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
@@ -130,12 +133,13 @@ input_seqs = encoder_input_data["valid"]
 target_sents = target_texts_dict["valid"]
 n = len(input_seqs)
 val_avg_edit_dist = 0
-for seq_index in tqdm(range(500)):
+for seq_index in tqdm(range(val_samples)):
     # Take one sequence (part of the training set)
     # for trying out decoding.
     input_seq = input_seqs[seq_index:seq_index+1]
-    decoded_sentence, attention_plot = str(decode_sequence(
-        input_seq, inf_enc_model, inf_dec_model)[:-1])
+    decoded_str, attention_plot = decode_sequence(
+        input_seq, inf_enc_model, inf_dec_model)
+    decoded_sentence = str(decoded_str[:-1])
     target_sentence = str(target_sents[seq_index:seq_index+1][0][1:-1])
     edit_dist = editDistance(decoded_sentence, target_sentence, len(
         decoded_sentence), len(target_sentence))/len(target_sentence)
@@ -143,9 +147,9 @@ for seq_index in tqdm(range(500)):
     if(seq_index < 5):
         plot_attention(attention_plot, target_sentence, decoded_sentence)
     if(seq_index < 20):
-        wandb.log({f"input_{seq_index}": input_seq, f"output_{seq_index}": decoded_sentence,
-                   f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
+        print({f"output_{seq_index}": decoded_sentence,
+               f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
 
-val_avg_edit_dist /= 500
+val_avg_edit_dist /= val_samples
 
-wandb.log({"val_avg_edit_dist": val_avg_edit_dist})
+print({"val_avg_edit_dist": val_avg_edit_dist})
