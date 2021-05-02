@@ -54,12 +54,12 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
     # Attention layer will take last encoder layer output and decoder input as input
     # We will combine the attention context with decoder input
     dec_final_inputs = dec_inputs
-    attn = BahdanauAttention(10)
+    attn = BahdanauAttention(config.attention_shape)
     attn_context, attn_weights = attn(
-        enc_lstm_out, dec_final_inputs)
+        enc_lstm_states, dec_final_inputs)
     if(config.attention):
         dec_final_inputs = multiply(
-            attn_context, dec_final_inputs)
+            expand_dims(attn_context, axis=1), dec_final_inputs)
     # print(dec_final_inputs.shape)
     # Create decoder layers
     dec_layers, dec_outs, dec_states = [], [], []
@@ -127,9 +127,10 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
 
     # Use the attention layer to get the context
     inf_dec_final_inputs = inf_dec_inputs
-    attn_context, attn_weights = attn(inf_enc_out, inf_dec_inputs)
+    attn_context, attn_weights = attn(inf_dec_init_states[-1], inf_dec_inputs)
     if(config.attention):
-        inf_dec_final_inputs = multiply(attn_context, inf_dec_inputs)
+        inf_dec_final_inputs = multiply(
+            expand_dims(attn_context, axis=1), inf_dec_inputs)
 
     # Use the decoder layers from training and collect their states
     # These states will be passed for each char separately

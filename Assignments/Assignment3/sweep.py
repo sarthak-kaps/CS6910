@@ -8,17 +8,19 @@ import wandb
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '10'
+val_samples = 20
 
 # Wandb default config
 config_defaults = {
-    "epochs": 10,
-    "batch_size": 128,
-    "layer_dimensions": [128],
+    "epochs": 15,
+    "batch_size": 64,
+    "layer_dimensions": [256, 128],
     "cell_type": "LSTM",
-    "dropout": 0.1,
+    "dropout": 0,
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
     "attention": True,
+    "attention_shape": 64
 }
 
 # Initialize the project
@@ -30,8 +32,8 @@ wandb.init(project='assignment3',
 config = wandb.config
 
 
-wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{''.join([str(i) for i in config.layer_dimensions])}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
-
+# wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{''.join([str(i) for i in config.layer_dimensions])}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
+wandb.run.name = "model_1"
 
 base_data_set_name = "dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled."
 
@@ -158,7 +160,7 @@ input_seqs = encoder_input_data["valid"]
 target_sents = target_texts_dict["valid"]
 n = len(input_seqs)
 val_avg_edit_dist = 0
-for seq_index in tqdm(range(500)):
+for seq_index in tqdm(range(val_samples)):
     # Take one sequence (part of the training set)
     # for trying out decoding.
     input_seq = input_seqs[seq_index:seq_index+1]
@@ -172,6 +174,6 @@ for seq_index in tqdm(range(500)):
         wandb.log({f"input_{seq_index}": input_seq, f"output_{seq_index}": decoded_sentence,
                    f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
 
-val_avg_edit_dist /= 500
+val_avg_edit_dist /= val_samples
 
 wandb.log({"val_avg_edit_dist": val_avg_edit_dist})

@@ -1,6 +1,9 @@
 import numpy as np
 from tensorflow import keras
 from tqdm import tqdm
+from tensorflow import reshape
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 import encode_input
 import wandb
@@ -29,6 +32,7 @@ reverse_target_char_index = dict(
 
 
 def decode_sequence(input_seq, encoder_model, decoder_model):
+    attention_plot = np.zeros((input_seq.shape[1], input_seq.shape[1]))
     # Encode the input as state vectors.
     states_value, enc_out = encoder_model.predict(input_seq)
 
@@ -42,11 +46,15 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
     stop_condition = False
     # Creating a list then using "".join() is usually much faster for string creation
     decoded_sentence = []
+    i = 0
     while not stop_condition:
         to_split = decoder_model.predict(
             [target_seq, states_value, enc_out])
         output_tokens, states_value, attn_weights = to_split[0], list(
             to_split[1:-1]), to_split[-1]
+
+        attention_weights = reshape(attn_weights, (-1, ))
+        attention_plot[i] = attention_weights.numpy()
 
         # Sample a token
 #         print(output_tokens)
@@ -62,8 +70,9 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
         # Update the target sequence (of length 1).
         target_seq = np.zeros((1, 1, data_encoder.num_decoder_tokens))
         target_seq[0, 0, sampled_token_index] = 1.
+        i += 1
 
-    return "".join(decoded_sentence)
+    return "".join(decoded_sentence), attention_plot
 
 
 def editDistance(str1, str2, m, n):
@@ -98,6 +107,24 @@ def editDistance(str1, str2, m, n):
 
     return dp[m][n]
 
+# function for plotting the attention weights
+
+
+def plot_attention(attention, sentence, predicted_sentence):
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.matshow(attention, cmap='viridis')
+
+    fontdict = {'fontsize': 14}
+
+    ax.set_xticklabels([''] + sentence, fontdict=fontdict, rotation=90)
+    ax.set_yticklabels([''] + predicted_sentence, fontdict=fontdict)
+
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
+
+    plt.show()
+
 
 input_seqs = encoder_input_data["valid"]
 target_sents = target_texts_dict["valid"]
@@ -107,12 +134,14 @@ for seq_index in tqdm(range(500)):
     # Take one sequence (part of the training set)
     # for trying out decoding.
     input_seq = input_seqs[seq_index:seq_index+1]
-    decoded_sentence = str(decode_sequence(
+    decoded_sentence, attention_plot = str(decode_sequence(
         input_seq, inf_enc_model, inf_dec_model)[:-1])
     target_sentence = str(target_sents[seq_index:seq_index+1][0][1:-1])
     edit_dist = editDistance(decoded_sentence, target_sentence, len(
         decoded_sentence), len(target_sentence))/len(target_sentence)
     val_avg_edit_dist += edit_dist
+    if(seq_index < 5):
+        plot_attention(attention_plot, target_sentence, decoded_sentence)
     if(seq_index < 20):
         wandb.log({f"input_{seq_index}": input_seq, f"output_{seq_index}": decoded_sentence,
                    f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
