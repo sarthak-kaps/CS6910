@@ -53,10 +53,8 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
         output_tokens, states_value, attn_weights = to_split[0], list(
             to_split[1:-1]), to_split[-1]
 
-        # print(attn_weights.shape)
         attention_weights = reshape(attn_weights, (-1, ))
         attention_plot[i] = attention_weights.numpy()
-
         # Sample a token
 #         print(output_tokens)
         sampled_token_index = np.argmax(output_tokens[0, 0])
@@ -115,7 +113,7 @@ def plot_attention(attention, sentence, predicted_sentence):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(1, 1, 1)
 
-    attention = attention[:len(predicted_sentence), :len(sentence)]
+    # attention = attention[:len(predicted_sentence), :len(sentence)]
     ax.matshow(attention, cmap='viridis')
 
     fontdict = {'fontsize': 14}

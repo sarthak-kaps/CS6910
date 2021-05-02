@@ -20,7 +20,7 @@ config_defaults = {
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
     "attention": True,
-    "attention_shape": 64
+    "attention_shape": 128
 }
 
 # Initialize the project

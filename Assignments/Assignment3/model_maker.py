@@ -1,6 +1,6 @@
 from tensorflow.keras import Input, Model
-from tensorflow.keras.layers import (GRU, LSTM, Concatenate, Dense, Dropout,
-                                     SimpleRNN, TimeDistributed, Layer, RepeatVector)
+from tensorflow.keras.layers import (GRU, LSTM, Dense, Dropout,
+                                     SimpleRNN, TimeDistributed, Layer)
 from tensorflow import expand_dims, reduce_sum, multiply, concat, split, nn
 from numpy import zeros
 
@@ -73,7 +73,7 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
         # We don't need all the timesteps for last layer.
         return_sequences = True
         enc_lstm = dispatch_dict[config.cell_type](
-            latent_dims[i], return_state=True, recurrent_dropout=config.recurrent_dropout, return_sequences=return_sequences, name=f"train_encoder_{config.cell_type}_{i+1}")
+            latent_dims[i], return_state=True, recurrent_dropout=config.recurrent_dropout, dropout=config.dropout, return_sequences=return_sequences, name=f"train_encoder_{config.cell_type}_{i+1}")
         enc_lstm_out = enc_lstm(prev_layer_out)
         enc_lstm_states, enc_lstm_out = concat(
             list(enc_lstm_out[1:]), axis=-1), enc_lstm_out[0]
@@ -84,15 +84,14 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
     # Add attention layer
     # Attention layer will take last encoder layer output and decoder input as input
     # We will combine the attention context with decoder input
-    dec_final_inputs = dec_inputs
 
     # Create decoder layers
     dec_layers, dec_outs, dec_states = [], [], []
-    prev_layer_out = dec_final_inputs
+    prev_layer_out = dec_inputs
     for i in range(nlayers):
         # Here, we want all the layers to output sequence, as we are using it in softmax
         dec_lstm = dispatch_dict[config.cell_type](
-            latent_dims[i], return_state=True, return_sequences=True, recurrent_dropout=config.recurrent_dropout, name=f"train_decoder_{config.cell_type}_{i+1}")
+            latent_dims[i], return_state=True, return_sequences=True, recurrent_dropout=config.recurrent_dropout, dropout=config.dropout, name=f"train_decoder_{config.cell_type}_{i+1}")
         dec_lstm_out = dec_lstm(
             prev_layer_out, initial_state=split(enc_states[i], factor, -1))
         dec_lstm_states, dec_lstm_out = list(dec_lstm_out[1:]), dec_lstm_out[0]
@@ -104,7 +103,6 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
     attn = BahdanauAttention(config.attention_shape)
     attn_context, attn_weights = attn(
         prev_layer_out, enc_lstm_out)
-    print(attn_context.shape, attn_weights.shape)
     if(config.attention):
         prev_layer_out = multiply(
             attn_context, prev_layer_out)
@@ -158,10 +156,9 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
     inf_enc_out = Input(
         shape=(enc_timesteps, latent_dims[nlayers-1]), name="Inference_encoder_output")
 
-    inf_dec_final_inputs = inf_dec_inputs
     # Use the decoder layers from training and collect their states
     # These states will be passed for each char separately
-    prev_layer_out = inf_dec_final_inputs
+    prev_layer_out = inf_dec_inputs
     inf_dec_states = []
     for i in range(nlayers):
         inf_dec_lstm_out = dec_layers[i](
@@ -172,18 +169,20 @@ def make_model(config, enc_timesteps, enc_vsize, dec_timesteps, dec_vsize):
         inf_dec_states.append(inf_dec_lstm_states)
 
     # Use the attention layer to get the context
-
+    # print(prev_layer_out.shape)
+    prev_layer_out = reduce_sum(prev_layer_out, axis=1)
     attn_context, attn_weights = attn(
         prev_layer_out, inf_enc_out)
-    print(attn_context.shape, attn_weights.shape)
+    # print(attn_context.shape, attn_weights.shape)
     if(config.attention):
         prev_layer_out = multiply(
             attn_context, prev_layer_out)
 
     # Add dropout
     inf_dec_dropout = dec_dropout(prev_layer_out)
-    inf_dec_output = TimeDistributed(dec_dense, name="Inference_timedistri_softmax")(
-        inf_dec_dropout)
+    inf_dec_output = TimeDistributed(dec_dense)(
+        expand_dims(inf_dec_dropout, axis=1))
+    # print(inf_dec_output.shape)
 
     # Inference decoder model is ready
     inf_dec_model = Model([inf_dec_inputs,
@@ -203,6 +202,6 @@ if __name__ == "__main__":
 
     full_model, inf_enc_model, inf_dec_model = make_model(
         default_config(), 20, 30, 20, 30)
-    print(full_model.summary())
-    print(inf_enc_model.summary())
-    print(inf_dec_model.summary())
+    # print(full_model.summary())
+    # print(inf_enc_model.summary())
+    # print(inf_dec_model.summary())
