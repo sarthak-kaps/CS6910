@@ -12,11 +12,11 @@ val_samples = 20
 
 # Wandb default config
 config_defaults = {
-    "epochs": 15,
+    "epochs": 10,
     "batch_size": 64,
-    "layer_dimensions": [256, 128],
+    "layer_dimensions": [128],
     "cell_type": "LSTM",
-    "dropout": 0,
+    "dropout": 0.1,
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
     "attention": True,

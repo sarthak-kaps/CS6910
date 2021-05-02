@@ -51,6 +51,12 @@ parameters:
     distribution: categorical
     values:
     - True
+  attention_shape:
+    distribution: categorical
+    values:
+    - 128
+    - 64
+    - 256
   optimizer:
     distribution: categorical
     values:

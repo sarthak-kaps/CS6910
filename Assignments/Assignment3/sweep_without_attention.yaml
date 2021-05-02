@@ -51,6 +51,10 @@ parameters:
     distribution: categorical
     values:
     - False
+  attention_shape:
+    distribution: categorical
+    values:
+    - 1
   optimizer:
     distribution: categorical
     values:
