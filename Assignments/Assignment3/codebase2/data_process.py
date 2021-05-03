@@ -5,7 +5,7 @@ import os
 import io
 import numpy as np
 
-np.random.seed(1337)
+np.random.seed(100)
 
 # Converts the unicode file to ascii
 
@@ -54,7 +54,7 @@ def convert(lang, tensor):
 
 def load_tensors(dataset_type, num_examples):
 
-    path_to_file = f"./dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled.{dataset_type}.tsv"
+    path_to_file = f"../dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled.{dataset_type}.tsv"
 
     # Try experimenting with the size of that dataset
     input_tensor, target_tensor, inp_lang, targ_lang = load_dataset(

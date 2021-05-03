@@ -1,39 +1,35 @@
 import tensorflow as tf
-    
-dispatch_dict = {"LSTM": tf.keras.layers.LSTM, "GRU": tf.keras.layers.GRU, "RNN": tf.keras.layers.SimpleRNN}
+
+dispatch_dict = {"LSTM": tf.keras.layers.LSTM,
+                 "GRU": tf.keras.layers.GRU, "RNN": tf.keras.layers.SimpleRNN}
 
 
 class Encoder(tf.keras.Model):
     def __init__(self, vocab_size, config):
         super(Encoder, self).__init__()
         self.config = config
-        self.batch_sz = self.config.batch_sz
+        self.batch_sz = self.config.batch_size
         self.layer_dimensions = self.config.layer_dimensions
-        self.embedding = tf.keras.layers.Embedding(vocab_size, self.config.embedding_dim)
-       
+        self.embedding = tf.keras.layers.Embedding(
+            vocab_size, self.config.embedding_dim)
+
         self.model = []
-        
-        for i in range(0, len(self.layer_dimensions)) :
+
+        for i in range(0, len(self.layer_dimensions)):
             self.model.append(dispatch_dict[config.cell_type](self.layer_dimensions[i],
-                                       return_sequences=True,
-                                       return_state=True,
-                                       recurrent_initializer='glorot_uniform'))
+                                                              return_sequences=True,
+                                                              return_state=True,
+                                                              recurrent_initializer='glorot_uniform'))
 
-
-    def call(self, x, hidden):
+    def call(self, x):
         x = self.embedding(x)
-        states = []
-        for i in range(0, len(self.model)) :
+        for i in range(0, len(self.model)):
             layer_out = self.model[i](x)
             x, state = layer_out[0], layer_out[1:]
-            state, x = concat(
-            list(layer_out[1:]), axis = -1), layer_out[0]
-            states.extend(state)
+            state, x = tf.concat(
+                list(layer_out[1:]), axis=-1), layer_out[0]
         output = x
-        return output, states
-
-    def initialize_hidden_state(self):
-        return tf.zeros((self.batch_sz, self.enc_units))
+        return output, state
 
 
 class BahdanauAttention(tf.keras.layers.Layer):
@@ -43,7 +39,7 @@ class BahdanauAttention(tf.keras.layers.Layer):
         self.W1 = tf.keras.layers.Dense(units)
         self.W2 = tf.keras.layers.Dense(units)
         self.V = tf.keras.layers.Dense(1)
-    
+
     def call(self, query, values):
         # query hidden state shape == (batch_size, hidden size)
         # query hidden state shape == (batch_size, hidden size)
@@ -69,43 +65,47 @@ class BahdanauAttention(tf.keras.layers.Layer):
 
 
 class Decoder(tf.keras.Model):
-    def __init__(self, vocab_size, embedding_dim, dec_units, batch_sz, config):
+    def __init__(self, vocab_size,  config):
         super(Decoder, self).__init__()
         self.config = config
-        self.batch_sz = self.config.batch_sz
+        self.batch_sz = self.config.batch_size
         self.layer_dimensions = self.config.layer_dimensions
-        self.embedding = tf.keras.layers.Embedding(vocab_size, self.config.embedding_dim)
+        self.embedding = tf.keras.layers.Embedding(
+            vocab_size, self.config.embedding_dim)
 
         self.model = []
-        for i in range(0, len(self.layer_dimensions)) :
+        for i in range(0, len(self.layer_dimensions)):
             self.model.append(dispatch_dict[config.cell_type](self.layer_dimensions[i],
-                                       return_sequences=True,
-                                       return_state=True,
-                                       recurrent_initializer='glorot_uniform'))
+                                                              return_sequences=True,
+                                                              return_state=True,
+                                                              recurrent_initializer='glorot_uniform'))
 
         self.fc = tf.keras.layers.Dense(vocab_size)
 
-        # used for attention
-        self.attention = BahdanauAttention(self.config.attention_shape)
+        if(config.attention):
+            # used for attention
+            self.attention = BahdanauAttention(self.config.attention_shape)
 
     def call(self, x, hidden, enc_output):
-        # enc_output shape == (batch_size, max_length, hidden_size)
-        context_vector, attention_weights = self.attention(hidden, enc_output)
 
         # x shape after passing through embedding == (batch_size, 1, embedding_dim)
         x = self.embedding(x)
 
-        # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)
-        x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
+        # enc_output shape == (batch_size, max_length, hidden_size)
+        if self.config.attention:
+            context_vector, attention_weights = self.attention(
+                hidden, enc_output)
+            # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)
+            x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
+        else:
+            x = tf.concat([tf.expand_dims(hidden, 1), x], axis=-1)
 
         # passing the concatenated vector through the model
-        states = []
-        for i in range(0, len(self.model)) :
+        for i in range(0, len(self.model)):
             layer_out = self.model[i](x)
-            state, x = concat(
-            list(layer_out[1:]), axis=-1), layer_out[0]
-            states.extend(state)
-        
+            state, x = tf.concat(
+                list(layer_out[1:]), axis=-1), layer_out[0]
+
         output = x
         # output shape == (batch_size * 1, hidden_size)
         output = tf.reshape(output, (-1, output.shape[2]))
@@ -113,4 +113,7 @@ class Decoder(tf.keras.Model):
         # output shape == (batch_size, vocab)
         x = self.fc(output)
 
-        return x, states, attention_weights
+        if(self.config.attention):
+            return x, state, attention_weights
+        else:
+            return x, state

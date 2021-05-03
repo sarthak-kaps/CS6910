@@ -1,4 +1,4 @@
-program: sweep_with_beam_search.py
+program: ../codebase1/sweep_with_beam_search.py
 command:
   - python
   - ${program}
