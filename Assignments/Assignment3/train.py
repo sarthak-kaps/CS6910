@@ -53,9 +53,9 @@ dataset = tf.data.Dataset.from_tensor_slices(
 dataset = dataset.batch(BATCH_SIZE, drop_remainder=True)
 
 # Create model
-encoder = Encoder(vocab_inp_size, embedding_dim, units, BATCH_SIZE)
+encoder = Encoder(vocab_inp_size, config)
 attention_layer = BahdanauAttention(config.attention_shape)
-decoder = Decoder(vocab_tar_size, embedding_dim, units, BATCH_SIZE)
+decoder = Decoder(vocab_tar_size, config)
 
 # Set loss and optimizer
 optimizer = tf.keras.optimizers.Adam()
@@ -185,10 +185,16 @@ def editDistance(str1, str2, m, n):
     return dp[m][n]
 
 
+valid_file_name = "dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled.dev.tsv" 
+
 # Validation Loop
-lines = io.open("dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled.dev.tsv",
+lines = io.open(valid_file_name,
                 encoding='UTF-8').read().strip().split("\n")
+
 np.random.shuffle(lines)
+
+num_log = 20
+num_attn_log = 5
 
 val_edit_dist = 0.0
 val_acc = 0
@@ -201,13 +207,13 @@ for i, line in tqdm(enumerate(lines[:VAL_SAMPLES])):
     val_edit_dist += edit_dist
     if(targ == predicted_sent):
         val_acc += 1
-    if (i < 20):
+    if (i < num_log):
         print(
             f'Input: {inp}, Prediction: {predicted_sent}, Target:{targ}, Edit-dist: {edit_dist}')
         wandb.log({f"edit_distance_{i}": edit_dist,
                    f"input_{i}": inp, f"output_{i}": predicted_sent, f"target_{i}": targ})
 
-    if (i < 5):
+    if (i < num_attn_log):
         attention_plot = attention_plot[:len(result.split(' ')),
                                         :len(sentence.split(' '))]
         plot_attention(attention_plot, sentence.split(' '), result.split(' '))
