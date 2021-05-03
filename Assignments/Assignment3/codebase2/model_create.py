@@ -23,8 +23,11 @@ class Encoder(tf.keras.Model):
 
     def call(self, x):
         x = self.embedding(x)
+
         for i in range(0, len(self.model)):
-            layer_out = self.model[i](x)
+            hidden = [tf.zeros((x.shape[0], self.layer_dimensions[i]))] * \
+                (2**(self.config.cell_type == "LSTM"))
+            layer_out = self.model[i](x, initial_state=hidden)
             x, state = layer_out[0], layer_out[1:]
             state, x = tf.concat(
                 list(layer_out[1:]), axis=-1), layer_out[0]

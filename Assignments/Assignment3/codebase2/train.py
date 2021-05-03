@@ -27,7 +27,7 @@ config_defaults = {
     "dropout": 0.1,
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
-    "attention": False,
+    "attention": True,
     "attention_shape": 16,
     "embedding_dim": 64
 }
@@ -65,7 +65,7 @@ encoder = Encoder(vocab_inp_size, config)
 decoder = Decoder(vocab_tar_size, config)
 
 # Set loss and optimizer
-optimizer = tf.keras.optimizers.Adam(0.1)
+optimizer = tf.keras.optimizers.Adam()
 loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True,
                                                             reduction='none')
 
@@ -178,7 +178,7 @@ def plot_attention(attention, sentence, predicted_sentence):
     ax = fig.add_subplot(1, 1, 1)
     ax.matshow(attention, cmap='viridis')
     fontdict = {'fontsize': 14}
-    ax.set_xticklabels([''] + sentence, fontdict=fontdict, rotation=90)
+    ax.set_xticklabels([''] + sentence, fontdict=fontdict)
     ax.set_yticklabels([''] + predicted_sentence,
                        fontdict=fontdict)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
