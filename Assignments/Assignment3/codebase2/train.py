@@ -1,4 +1,5 @@
 import time
+from matplotlib import font_manager
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -11,35 +12,29 @@ from tqdm import tqdm
 from data_process import load_tensors, preprocess_sentence, create_dataset
 from model_create import BahdanauAttention, Decoder, Encoder
 from matplotlib.font_manager import FontProperties
-import matplotlib as mpl
-
-mpl.rcParams['font.sans-serif'] = ['Source Han Sans TW',
-                                   'sans-serif',
-                                   'Lohit Devanagari'  # fc-list :lang=hi family
-                                   ]
-
 
 config_defaults = {
-    "epochs": 10,
-    "batch_size": 128,
-    "layer_dimensions": [128],
+    "epochs": 2,
+    "batch_size": 256,
+    "layer_dimensions": [16],
     "cell_type": "LSTM",
     "dropout": 0.1,
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
     "attention": True,
     "attention_shape": 16,
-    "embedding_dim": 64
+    "embedding_dim": 16
 }
 
 # Initialize the project
 wandb.init(project='assignment3',
-           group='trial with attention',
+           group='attention_exp1',
            config=config_defaults)
 
 
 config = wandb.config
 
+wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{'_'.join([str(i) for i in config.layer_dimensions])}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
 
 # Load dataset
 input_tensor, target_tensor, inp_lang, targ_lang, max_length_targ, max_length_inp = load_tensors(
@@ -53,7 +48,7 @@ embedding_dim = config.embedding_dim
 units = config.layer_dimensions[0]
 vocab_inp_size = len(inp_lang.word_index)+1
 vocab_tar_size = len(targ_lang.word_index)+1
-VAL_SAMPLES = 1000
+VAL_SAMPLES = 100
 
 # Create dataset
 dataset = tf.data.Dataset.from_tensor_slices(
@@ -175,11 +170,14 @@ def evaluate(sentence):
 
 def plot_attention(attention, sentence, predicted_sentence):
     fig = plt.figure(figsize=(10, 10))
+    hindi_font = FontProperties(
+        fname="/usr/share/fonts/truetype/lohit-devanagari/Lohit-Devanagari.ttf")
+
     ax = fig.add_subplot(1, 1, 1)
     ax.matshow(attention, cmap='viridis')
     fontdict = {'fontsize': 14}
     ax.set_xticklabels([''] + sentence, fontdict=fontdict)
-    ax.set_yticklabels([''] + predicted_sentence,
+    ax.set_yticklabels([''] + predicted_sentence, fontproperties=hindi_font,
                        fontdict=fontdict)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))

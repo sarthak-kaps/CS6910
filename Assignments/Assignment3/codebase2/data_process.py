@@ -63,10 +63,4 @@ def load_tensors(dataset_type, num_examples):
     # Calculate max_length of the target tensors
     max_length_targ, max_length_inp = target_tensor.shape[1], input_tensor.shape[1]
 
-    print("Input Language; index to word mapping")
-    convert(inp_lang, input_tensor[0])
-    print()
-    print("Target Language; index to word mapping")
-    convert(targ_lang, target_tensor[0])
-
     return input_tensor, target_tensor, inp_lang, targ_lang, max_length_targ, max_length_inp
