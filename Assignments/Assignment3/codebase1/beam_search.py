@@ -94,5 +94,6 @@ class BeamSearch :
 '''
 Sample Usage
 bs = BeamSearch(3, data_encoder.max_decoder_seq_length, data_encoder.target_token_index)
+bs.apply(encoder, decoder, input_seq)
 '''
 
