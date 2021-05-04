@@ -10,37 +10,32 @@ import wandb
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '10'
-val_samples = 20
+val_samples = 100
 train_samples = 1000000
 
 
 # Wandb default config
 config_defaults = {
-    "epochs": 5,
+    "epochs": 3,
     "batch_size": 128,
     "layer_dimensions": [128, 128],
     "cell_type": "LSTM",
     "dropout": 0.1,
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
-<<<<<<< HEAD
-    "beam_width" : 3,
-=======
-    "beam_width": 1,
->>>>>>> 5db337bd606564413fee31f37a515b838293aea8
+    "beam_width": 3,
     "attention": False,
     "attention_shape": 256
 }
 
 # Initialize the project
 wandb.init(project='assignment3',
-           group='Without attention, with beam search',
+           group='Without attention 1',
            config=config_defaults)
 
 # config file used for the current run
 config = wandb.config
 
-val_samples = 100
 
 wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{config.layer_dimensions}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}_beam_{config.beam_width}"
 
@@ -73,20 +68,17 @@ model.compile(
 
 # fit the model
 model.fit(
-    x=[encoder_input_data["train"][:train_samples],
-        decoder_input_data["train"][:train_samples]],
-    y=decoder_target_data["train"][:train_samples],
+    x=[encoder_input_data["train"], decoder_input_data["train"]],
+    y=decoder_target_data["train"],
     batch_size=config.batch_size,
     epochs=config.epochs,
     # validation_data=([encoder_input_data["valid"],
     #                   decoder_input_data["valid"]], decoder_target_data["valid"]),
-    callbacks=[WandbCallback(save_model=False)]
+    callbacks=[WandbCallback()]
 )
 
 # Save model
-model.save(wandb.run.name+"/train")
-inf_enc_model.save(wandb.run.name+"/inf-enc")
-inf_dec_model.save(wandb.run.name+"/inf-dec")
+model.save(wandb.run.name)
 
 # Reverse-lookup token index to decode sequences back to
 # something readable.
@@ -109,7 +101,7 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
     # (to simplify, here we assume a batch of size 1).
     stop_condition = False
     # Creating a list then using "".join() is usually much faster for string creation
-    decoded_sentence = []
+    decoded_sentence = ""
     while not stop_condition:
         to_split = decoder_model.predict(
             [target_seq, states_value, enc_out])
@@ -120,9 +112,9 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
 #         print(output_tokens)
         sampled_token_index = np.argmax(output_tokens[0, 0])
         sampled_char = reverse_target_char_index[sampled_token_index]
-        decoded_sentence.append(sampled_char)
+        decoded_sentence += (sampled_char)
 
-        # Exit condition: either hit max length
+        # Exit conition: either hit max length
         # or find stop character.
         if sampled_char == '\n' or len(decoded_sentence) > data_encoder.max_decoder_seq_length:
             stop_condition = True
@@ -131,7 +123,7 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
         target_seq = np.zeros((1, 1, data_encoder.num_decoder_tokens))
         target_seq[0, 0, sampled_token_index] = 1.
 
-    return "".join(decoded_sentence)
+    return decoded_sentence
 
 
 def editDistance(str1, str2, m, n):
@@ -147,7 +139,7 @@ def editDistance(str1, str2, m, n):
             if i == 0:
                 dp[i][j] = j    # Min. operations = j
 
-            # If second strig is empty, only option is to
+            # If second string is empty, only option is to
             # remove all characters of second string
             elif j == 0:
                 dp[i][j] = i    # Min. operations = i
@@ -175,19 +167,14 @@ val_avg_edit_dist = 0
 
 if config.beam_width > 1:
     # make the beam search object
-<<<<<<< HEAD
-    for seq_index in tqdm(range(0, 100)):
-=======
     bs = beam_search.BeamSearch(
         config.beam_width, data_encoder.max_decoder_seq_length, data_encoder.target_token_index)
     val_avg_edit_dist = 0
     log_table = []
     val_acc = 0
     for seq_index in tqdm(range(val_samples)):
->>>>>>> 5db337bd606564413fee31f37a515b838293aea8
         # Take one sequence (part of the training set)
         # for trying out decoding.
-        bs = beam_search.BeamSearch(config.beam_width, data_encoder.max_decoder_seq_length, data_encoder.target_token_index)
         input_seq = input_seqs[seq_index:seq_index+1]
         decoded_sentence = bs.apply(inf_enc_model, inf_dec_model, input_seq)
         target_sentence = str(target_sents[seq_index:seq_index+1][0][1:-1])
@@ -211,14 +198,10 @@ if config.beam_width > 1:
                                                    columns=["Input", "Prediction", "Target", "Edit-dist"])})
 
 
-<<<<<<< HEAD
-else :
-=======
 else:
     val_avg_edit_dist = 0
     log_table = []
     val_acc = 0
->>>>>>> 5db337bd606564413fee31f37a515b838293aea8
     for seq_index in tqdm(range(val_samples)):
         # Take one sequence (part of the training set)
         # for trying out decoding.
@@ -230,15 +213,6 @@ else:
             decoded_sentence), len(target_sentence))/len(target_sentence)
         val_avg_edit_dist += edit_dist
         if(seq_index < 20):
-<<<<<<< HEAD
-            wandb.log({f"input_{seq_index}": input_seq, f"output_{seq_index}": decoded_sentence,
-                       f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
-
-    val_avg_edit_dist /= val_samples
-
-    wandb.log({"val_avg_edit_dist": val_avg_edit_dist})
-
-=======
             log_table.append(
                 [input_texts[seq_index], decoded_sentence, target_sentence, edit_dist])
             print({f"input_{seq_index}": input_texts[seq_index], f"output_{seq_index}": decoded_sentence,
@@ -249,4 +223,3 @@ else:
     val_avg_edit_dist /= val_samples
     val_acc /= val_samples
     wandb.log({"val_avg_edit_dist": val_avg_edit_dist, "val_avg_acc": val_acc})
->>>>>>> 5db337bd606564413fee31f37a515b838293aea8
