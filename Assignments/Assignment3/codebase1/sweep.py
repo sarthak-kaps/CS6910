@@ -13,14 +13,14 @@ train_samples = 1000000
 
 # Wandb default config
 config_defaults = {
-    "epochs": 50,
+    "epochs": 10,
     "batch_size": 128,
-    "layer_dimensions": [128],
+    "layer_dimensions": [128, 128],
     "cell_type": "GRU",
     "dropout": 0.1,
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
-    "attention": True,
+    "attention": False,
     "attention_shape": 256
 }
 
@@ -33,10 +33,10 @@ wandb.init(project='assignment3',
 config = wandb.config
 
 
-# wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{''.join([str(i) for i in config.layer_dimensions])}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
-wandb.run.name = "model_1"
+wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{config.layer_dimensions}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
+#wandb.run.name = "model_1"
 
-base_data_set_name = "dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled."
+base_data_set_name = "../dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled."
 
 data_encoder = encode_input.one_hot_encoder(
     [base_data_set_name + "train.tsv", base_data_set_name + "dev.tsv", base_data_set_name + "test.tsv"], ["train", "valid", "test"])
