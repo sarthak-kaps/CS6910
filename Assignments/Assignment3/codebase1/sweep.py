@@ -8,7 +8,7 @@ import wandb
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '10'
-val_samples = 20
+val_samples = 100
 train_samples = 1000000
 
 # Wandb default config
@@ -160,8 +160,11 @@ def editDistance(str1, str2, m, n):
 
 input_seqs = encoder_input_data["valid"]
 target_sents = target_texts_dict["valid"]
+input_texts = input_texts_dict["valid"]
 n = len(input_seqs)
 val_avg_edit_dist = 0
+log_table = []
+val_acc = 0
 for seq_index in tqdm(range(val_samples)):
     # Take one sequence (part of the training set)
     # for trying out decoding.
@@ -172,10 +175,16 @@ for seq_index in tqdm(range(val_samples)):
     edit_dist = editDistance(decoded_sentence, target_sentence, len(
         decoded_sentence), len(target_sentence))/len(target_sentence)
     val_avg_edit_dist += edit_dist
+    if(decoded_sentence == target_sentence):
+        val_acc += 1
     if(seq_index < 20):
-        wandb.log({f"input_{seq_index}": input_seq, f"output_{seq_index}": decoded_sentence,
-                   f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
+        log_table.append(
+            [input_texts[seq_index], decoded_sentence, target_sentence, edit_dist])
+        print({f"input_{seq_index}": input_texts[seq_index], f"output_{seq_index}": decoded_sentence,
+               f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
+wandb.log({"Validation log table": wandb.Table(data=log_table,
+                                               columns=["Input", "Prediction", "Target", "Edit-dist"])})
 
 val_avg_edit_dist /= val_samples
-
-wandb.log({"val_avg_edit_dist": val_avg_edit_dist})
+val_acc /= val_samples
+wandb.log({"val_avg_edit_dist": val_avg_edit_dist, "val_avg_acc": val_acc})

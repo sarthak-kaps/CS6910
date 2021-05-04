@@ -1,4 +1,4 @@
-program: ../codebase2/train.py
+program: ../codebase1/sweep.py
 command:
   - python
   - ${program}
@@ -27,7 +27,6 @@ parameters:
     values:
     - 64
     - 128
-    - 256
   cell_type :
     distribution: categorical
     values:
@@ -39,13 +38,11 @@ parameters:
     values:
     - 0
     - 0.1
-    - 0.2
   recurrent_dropout:
     distribution: categorical
     values:
     - 0
     - 0.1
-    - 0.2
   attention:
     distribution: categorical
     values:
@@ -57,9 +54,7 @@ parameters:
   embedding_dim:
     distribution: categorical
     values:
-    - 16
-    - 32
-    - 64
+    - 0
 early_terminate:
   eta: 3
   max_iter: 27
