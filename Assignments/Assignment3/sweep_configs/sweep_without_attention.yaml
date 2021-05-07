@@ -55,6 +55,10 @@ parameters:
     distribution: categorical
     values:
     - 0
+  attention_shape:
+    distribution: categorical
+    values:
+    - 0
 early_terminate:
   eta: 3
   max_iter: 27
