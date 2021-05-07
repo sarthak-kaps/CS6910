@@ -16,7 +16,7 @@ config_defaults = {
     "epochs": 10,
     "batch_size": 128,
     "layer_dimensions": [128, 128],
-    "cell_type": "GRU",
+    "cell_type": "LSTM",
     "dropout": 0.1,
     "recurrent_dropout": 0.1,
     "optimizer": "adam",
@@ -26,7 +26,7 @@ config_defaults = {
 
 # Initialize the project
 wandb.init(project='assignment3',
-           group='Without attention 1',
+           group='Without Attention Run 2',
            config=config_defaults)
 
 # config file used for the current run
@@ -69,8 +69,8 @@ model.fit(
     y=decoder_target_data["train"][:train_samples],
     batch_size=config.batch_size,
     epochs=config.epochs,
-    # validation_data=([encoder_input_data["valid"],
-    #                   decoder_input_data["valid"]], decoder_target_data["valid"]),
+    validation_data=([encoder_input_data["valid"],
+                       decoder_input_data["valid"]], decoder_target_data["valid"]),
     callbacks=[WandbCallback(save_model=False)]
 )
 
@@ -110,7 +110,7 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
         # Sample a token
 #         print(output_tokens)
         sampled_token_index = np.argmax(output_tokens[0, 0])
-        sampled_char = reverse_target_char_index[sampled_token_index]
+        sampled_char = reverse_target_char_index[sampled_token_ndex]
         decoded_sentence.append(sampled_char)
 
         # Exit condition: either hit max length
@@ -187,4 +187,4 @@ wandb.log({"Validation log table": wandb.Table(data=log_table,
 
 val_avg_edit_dist /= val_samples
 val_acc /= val_samples
-wandb.log({"val_avg_edit_dist": val_avg_edit_dist, "val_avg_acc": val_acc})
+wandb.log({"val_avg_edit_dist": val_avg_edit_dist, "val_avg_acc": val_acc})i

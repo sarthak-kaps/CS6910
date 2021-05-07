@@ -30,7 +30,7 @@ config_defaults = {
 
 # Initialize the project
 wandb.init(project='assignment3',
-           group='Without attention 1',
+           group='Without attention, runs with Beam Search with validation accuracy and save',
            config=config_defaults)
 
 # config file used for the current run
@@ -79,6 +79,8 @@ model.fit(
 
 # Save model
 model.save(wandb.run.name)
+inf_enc_model.save(wandb.run.name+"/inf-enc")
+inf_dec_model.save(wandb.run.name+"/inf-dec")
 
 # Reverse-lookup token index to decode sequences back to
 # something readable.
@@ -110,7 +112,7 @@ def decode_sequence(input_seq, encoder_model, decoder_model):
 
         # Sample a token
 #         print(output_tokens)
-        sampled_token_index = np.argmax(output_tokens[0, 0])
+        sampled_token_index = np.argmax(output_tokes[0, 0])
         sampled_char = reverse_target_char_index[sampled_token_index]
         decoded_sentence += (sampled_char)
 
@@ -166,15 +168,14 @@ n = len(input_seqs)
 val_avg_edit_dist = 0
 
 if config.beam_width > 1:
-    # make the beam search object
-    bs = beam_search.BeamSearch(
-        config.beam_width, data_encoder.max_decoder_seq_length, data_encoder.target_token_index)
     val_avg_edit_dist = 0
     log_table = []
     val_acc = 0
     for seq_index in tqdm(range(val_samples)):
         # Take one sequence (part of the training set)
         # for trying out decoding.
+        # make the beam search object
+        bs = beam_search.BeamSearch(config.beam_width, data_encoder.max_decoder_seq_length, data_encoder.target_token_index)
         input_seq = input_seqs[seq_index:seq_index+1]
         decoded_sentence = bs.apply(inf_enc_model, inf_dec_model, input_seq)
         target_sentence = str(target_sents[seq_index:seq_index+1][0][1:-1])
@@ -184,6 +185,8 @@ if config.beam_width > 1:
         edit_dist = editDistance(decoded_sentence, target_sentence, len(
             decoded_sentence), len(target_sentence))/len(target_sentence)
         val_avg_edit_dist += edit_dist
+        if(decoded_sentence == target_sentence):
+            val_acc += 1
         if(seq_index < 20):
             log_table.append(
                 [input_texts[seq_index], decoded_sentence, target_sentence, edit_dist])
@@ -212,6 +215,8 @@ else:
         edit_dist = editDistance(decoded_sentence, target_sentence, len(
             decoded_sentence), len(target_sentence))/len(target_sentence)
         val_avg_edit_dist += edit_dist
+        if(decoded_sentence == target_sentence):
+            val_acc += 1
         if(seq_index < 20):
             log_table.append(
                 [input_texts[seq_index], decoded_sentence, target_sentence, edit_dist])

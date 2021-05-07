@@ -47,7 +47,7 @@ class BahdanauAttention(Layer):
             score = self.V(nn.tanh(tsum))
             # score : (batch_size, max_len2, max_len1, 1)
             attention_weights = nn.softmax(score, axis=2)
-            # attention_weights : (batch_size, max_len2, max_len1,1)
+           # attention_weights : (batch_size, max_len2, max_len1,1)
             # values : (batch_size, 1,max_len1, hidden_size)
             context_vector = attention_weights * values
             # context_vector : (batch_size, max_len2, max_len1, hidden_size)
@@ -203,4 +203,4 @@ if __name__ == "__main__":
         default_config(), 20, 30, 21, 31)
     # print(full_model.summary())
     # print(inf_enc_model.summary())
-    # print(inf_dec_model.summary())
+    # print(inf_dec_model.summary()) 
