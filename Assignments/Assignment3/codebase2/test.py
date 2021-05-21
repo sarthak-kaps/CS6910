@@ -4,42 +4,34 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import tensorflow as tf
-import wandb
-import io
-from tqdm import tqdm
-
-from data_process import load_tensors, preprocess_sentence, create_dataset
-from model_create_states import BahdanauAttention, Decoder, Encoder
 from matplotlib.font_manager import FontProperties
-import matplotlib as mpl
 
-mpl.rcParams['font.sans-serif'] = ['Source Han Sans TW',
-                                   'sans-serif',
-                                   'Lohit Devanagari'  # fc-list :lang=hi family
-                                   ]
-
+import wandb
+from data_process import load_tensors
+from model_create import Decoder, Encoder
 
 config_defaults = {
-    "epochs": 40,
+    "epochs": 5,
     "batch_size": 128,
-    "layer_dimensions": [128],
-    "cell_type": "LSTM",
+    "layer_dimensions": [256],
+    "cell_type": "GRU",
     "dropout": 0.1,
-    "recurrent_dropout": 0.1,
+    "recurrent_dropout": 0,
     "optimizer": "adam",
-    "attention": False,
-    "attention_shape": 16,
-    "embedding_dim": 64
+    "attention": True,
+    "attention_shape": 128,
+    "embedding_dim": 256
 }
 
 # Initialize the project
 wandb.init(project='assignment3',
-           group='trial with attention',
+           group='attention_exp1_test',
            config=config_defaults)
 
 
 config = wandb.config
 
+wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{'_'.join([str(i) for i in config.layer_dimensions])}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
 
 # Load dataset
 input_tensor, target_tensor, inp_lang, targ_lang, max_length_targ, max_length_inp = load_tensors(
@@ -53,7 +45,6 @@ embedding_dim = config.embedding_dim
 units = config.layer_dimensions[0]
 vocab_inp_size = len(inp_lang.word_index)+1
 vocab_tar_size = len(targ_lang.word_index)+1
-VAL_SAMPLES = 1000
 
 # Create dataset
 dataset = tf.data.Dataset.from_tensor_slices(
@@ -82,7 +73,7 @@ def loss_function(real, pred):
 def train_step(inp, targ):
     loss = 0
     with tf.GradientTape() as tape:
-        enc_output, enc_hidden, states = encoder(inp)
+        enc_output, enc_hidden = encoder(inp)
         dec_hidden = enc_hidden
         dec_input = tf.expand_dims(
             [targ_lang.word_index['<start>']] * BATCH_SIZE, 1)
@@ -91,7 +82,7 @@ def train_step(inp, targ):
             # passing enc_output to the decoder
 
             output = decoder(
-                dec_input, dec_hidden, enc_output, states)
+                dec_input, dec_hidden, enc_output)
             predictions, dec_hidden = output[0], output[1]
             loss += loss_function(targ[:, t], predictions)
             # using teacher forcing
@@ -120,66 +111,42 @@ for epoch in range(EPOCHS):
     print(f'Time taken for 1 epoch {time.time()-start:.2f} sec\n')
 
 
-def evaluate(sentence):
-    attention_plot = np.zeros((max_length_targ, max_length_inp))
-
-    sentence = preprocess_sentence(sentence)
-
-    inputs = [inp_lang.word_index[i] for i in sentence.split(' ')]
-    inputs = tf.keras.preprocessing.sequence.pad_sequences([inputs],
-                                                           maxlen=max_length_inp,
-                                                           padding='post')
-    inputs = tf.convert_to_tensor(inputs)
-
-    result = ''
-
-    enc_out, enc_hidden, states = encoder(inputs)
-
+def evaluate(inp):
+    attention_plots = [
+        np.zeros((max_length_targ, max_length_inp))]*(inp.shape[0])
+    enc_output, enc_hidden = encoder(inp)
     dec_hidden = enc_hidden
-    dec_input = tf.expand_dims([targ_lang.word_index['<start>']], 0)
-
+    dec_input = tf.expand_dims(
+        [targ_lang.word_index['<start>']] * BATCH_SIZE, 1)
+    batchpreds = []
     for t in range(max_length_targ):
-        if(config.attention):
-            predictions, dec_hidden, attention_weights = decoder(dec_input,
-                                                                 dec_hidden,
-                                                                 enc_out, states)
-
-            # storing the attention weights to plot later on
-            attention_weights = tf.reshape(attention_weights, (-1, ))
-            attention_plot[t] = attention_weights.numpy()
-        else:
-            predictions, dec_hidden = decoder(dec_input,
-                                              dec_hidden,
-                                              enc_out, states)
-
-        predicted_id = tf.argmax(predictions[0]).numpy()
-
-        result += targ_lang.index_word[predicted_id] + ' '
-
-        if targ_lang.index_word[predicted_id] == '<end>':
-            if(config.attention):
-                return result, sentence, attention_plot
-            else:
-                return result, sentence
-
-        # the predicted ID is fed back into the model
-        dec_input = tf.expand_dims([predicted_id], 0)
-
-    if(config.attention):
-        return result, sentence, attention_plot
-    else:
-        return result, sentence
-
-# function for plotting the attention weights
+        output = decoder(dec_input, dec_hidden, enc_output)
+        predictions, dec_hidden = output[0], output[1]
+        attention_plots[:][t] = tf.reshape(output[2], (inp.shape[0], -1))
+        predicted_id = tf.argmax(predictions, axis=1).numpy()
+        batchpreds.append(predicted_id)
+        dec_input = tf.expand_dims(predicted_id, 1)
+    batchpreds = np.array(batchpreds).T
+    batch_results = []
+    for i in range(inp.shape[0]):
+        curr_result = ""
+        for t in batchpreds[i]:
+            curr_result += targ_lang.index_word[t] + ' '
+            if targ_lang.index_word[t] == "<end>":
+                break
+        batch_results.append(curr_result)
+    return batch_results, attention_plots
 
 
 def plot_attention(attention, sentence, predicted_sentence):
     fig = plt.figure(figsize=(10, 10))
+    hindi_font = FontProperties(
+        fname="/usr/share/fonts/truetype/lohit-devanagari/Lohit-Devanagari.ttf")
     ax = fig.add_subplot(1, 1, 1)
     ax.matshow(attention, cmap='viridis')
     fontdict = {'fontsize': 14}
-    ax.set_xticklabels([''] + sentence, fontdict=fontdict, rotation=90)
-    ax.set_yticklabels([''] + predicted_sentence,
+    ax.set_xticklabels([''] + sentence, fontdict=fontdict)
+    ax.set_yticklabels([''] + predicted_sentence, fontproperties=hindi_font,
                        fontdict=fontdict)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
@@ -206,42 +173,52 @@ def editDistance(str1, str2, m, n):
 
 # Validation Loop
 
-
-valid_file_name = "../dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled.dev.tsv"
-
-# Validation Loop
-lines = io.open(valid_file_name,
-                encoding='UTF-8').read().strip().split("\n")
-
-np.random.shuffle(lines)
 log_table = []
 
 num_log = 20
-num_attn_log = 1
+num_attn_log = 10
 
 val_edit_dist = 0.0
 val_acc = 0
-for i, line in enumerate(lines[:VAL_SAMPLES]):
-    targ, inp = line.split("\t")[:2]
-    if config.attention:
-        result, sentence, attention_plot = evaluate(inp)
-    else:
-        result, sentence = evaluate(inp)
-    predicted_sent = "".join(result.split(' ')[:-2])
-    edit_dist = editDistance(predicted_sent, targ,
-                             len(predicted_sent), len(targ))/len(targ)
-    val_edit_dist += edit_dist
-    if(targ == predicted_sent):
-        val_acc += 1
-    if (i < num_log):
-        log_table.append([inp, predicted_sent, targ, edit_dist])
-        print(
-            f'Input: {inp}, Prediction: {predicted_sent}, Target:{targ}, Edit-dist: {edit_dist}')
 
-    if ((config.attention) and (i < num_attn_log)):
-        attention_plot = attention_plot[:len(result.split(' ')),
-                                        :len(sentence.split(' '))]
-        plot_attention(attention_plot, sentence.split(' '), result.split(' '))
+# Load dataset
+test_input_tensor, test_target_tensor, test_inp_lang, test_targ_lang, test_max_length_targ, test_max_length_inp = load_tensors(
+    "test", 5000)
+
+# Create dataset
+dataset = tf.data.Dataset.from_tensor_slices(
+    (input_tensor, target_tensor)).shuffle(BUFFER_SIZE)
+dataset = dataset.batch(BATCH_SIZE, drop_remainder=True)
+
+val_acc = 0
+for (batch, (inpu, target)) in enumerate(dataset.take(steps_per_epoch)):
+    batch_results, attention_plots = evaluate(inpu)
+    for i in range(target.shape[0]):
+        predicted_sent = "".join(batch_results[i].split(' ')[:-2])
+        target_np = np.array(target)
+        inpu_np = np.array(inpu)
+        targ = "".join([targ_lang.index_word[c]
+                        for c in target_np[i] if(c > 2)])
+        inp = "".join([inp_lang.index_word[c]
+                       for c in inpu_np[i] if(c > 3)])
+    # if(batch % 100) == 0:
+        edit_dist = editDistance(predicted_sent, targ,
+                                 len(predicted_sent), len(targ))/len(targ)
+        val_edit_dist += edit_dist
+        if(targ == predicted_sent):
+            val_acc += 1
+        if (i + batch*BATCH_SIZE < num_log):
+            log_table.append([inp, predicted_sent, targ, edit_dist])
+        if ((config.attention) and (i + batch*BATCH_SIZE < num_attn_log)):
+            attention_plot = attention_plots[i][:len(batch_results[i]),
+                                                :len(targ)+2]
+            plot_attention(attention_plot, [
+                           '<start>'] + list(targ) + ['<end>'], list("".join(batch_results[i].split(' ')[:-1])) + ["<end>"])
+
+    print(
+        f'Input: {inp}, Prediction: {predicted_sent}, Target:{targ}, Edit-dist: {edit_dist}')
+
+VAL_SAMPLES = input_tensor.shape[0]
 
 val_edit_dist /= VAL_SAMPLES
 val_acc /= VAL_SAMPLES
