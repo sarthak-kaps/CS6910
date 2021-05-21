@@ -1,0 +1,35 @@
+1957 - Firth's hypothesis - Meaning of the word is defined by the company it keeps - https://arxiv.org/pdf/1610.08229.pdf#cite.Firth
+
+1964 - Semantic diffrentials - https://arxiv.org/pdf/1610.08229.pdf#cite.Firth
+
+Semantic differential (SD) is a type of a rating scale designed to measure the connotative meaning of objects, events, and concepts. Started by Osgood.
+
+1986 - Neural probabilistic language models - Hinton - https://arxiv.org/pdf/1610.08229.pdf#cite.Hinton%3Adist
+
+Distributed representation describes the same data features across multiple scalable and interdependent layers.
+
+1990 - Count-based-methods, LSI, LSA (Latent Semantic Indexing/Analysis) - https://arxiv.org/pdf/1610.08229.pdf#cite.Firth - Connected with Firth's hypothesis
+
+ In count based models, the semantic similarity between words is learned by counting the co-occurrence frequency.
+ 
+Indexing by Latent Semantic Analysis : Deerwester et al. 1990
+ 
+ 
+1990 - Pointwise Mutual Information - Kenneth - https://arxiv.org/pdf/1610.08229.pdf#cite.Kenneth%3APMI - Refined the high-dimensional word embeddings by taking log.
+
+2008 - Pre-trained word embeddings - Collobert and Weston - https://arxiv.org/pdf/1610.08229.pdf#cite.Hinton%3Adist - Type of neural probabilistic model
+
+Collobert, Ronan,  and  Jason  Weston published paper for A  unified  architecture  for  natural  language  processing: Deep neural networks with multitasklearning, which was the first paper to  show  the  utility  of  pre-trained  word  em-beddings
+
+2012 - NCE - https://www.gavagai.io/text-analytics/a-brief-history-of-word-embeddings/ - Negative sampling
+
+2013 - Word2Vec, energy based predictive models - https://arxiv.org/pdf/1610.08229.pdf#cite.Mikolov%3Aword2vec - Uses simplified version of NCE
+
+
+2014 - Glove (Global Vectors for Word Representation) (Predictive models) - https://arxiv.org/pdf/1610.08229.pdf#cite.Hinton%3Adist
+
+
+
+Reference links -
+https://arxiv.org/pdf/1610.08229.pdf
+https://www.gavagai.io/text-analytics/a-brief-history-of-word-embeddings/

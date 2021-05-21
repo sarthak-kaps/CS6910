@@ -1,0 +1,45 @@
+1971 - 1st Closed captioning demonstration
+	-> Closed captioning was first demonstrated in the United States at the First National Conference on Television for the Hearing Impaired in Nashville, Tennessee, in 1971
+	-> Soon, it became so popular that many encoders were developed for closed captioning. Also, the FCC in 1976 set aside line 21 for the transmission of closed captions.
+	-> https://api.time.com/wp-content/uploads/2020/03/closed-cap.jpg
+
+1982 - Real-time captioning
+	-> Real-time captioning, a process for captioning live broadcasts, was developed by the National Captioning Institute in 1982.
+	-> In real-time captioning, court reporters trained to write at speeds of over 225 words per minute to give viewers instantaneous access to live news, sports, and entertainment.
+	-> Since 2010 BBC provides a 100% broadcast captioning service across all 7 of its main broadcast channels
+	-> https://captionfirst.com/wp-content/themes/captionFirst/images/file_7.jpg
+	
+1984 - Video compression standards
+	-> H.120 was the first digital video compression standard
+	-> The video turned out not to be of adequate quality, but it provided important knowledge leading directly to its practical successors, such as H.261.
+	-> Soon, H.261 was released in 1988, which used DCT compression. Later, DCT compresion was adopted as standard by all the major video coding standards that followed.
+	-> https://www.researchgate.net/profile/Peppino-Fazio/publication/221907354/figure/fig3/AS:305191636226062@1449774764968/The-evolution-of-video-compression-standards-As-exposed-in-previous-paragraphs-it-is.png
+
+1989 - CNNs
+	-> The first work on modern convolutional neural networks (CNNs) occurred in the 1990s, inspired by the neocognitron. Yann LeCun et al., in their paper demonstrated that a CNN model which aggregates simpler features into progressively more complicated features can be successfully used for handwritten character recognition.
+	-> CNN revolutionalized Video classification domain. CNNs can capture the interframes differences as well as intra frames differences efficiently, leading to better classifications.
+	-> https://miro.medium.com/max/1673/1*vkQ0hXDaQv57sALXAJquxA.jpeg
+	
+1995 - 1st public videoconference
+	-> In 1995.  H.263  was developed that evoked a  great development  in  video  conferencing  and cell phone codec.
+	->  Real video came  into e xistence with the base of H 263 colour was in streaming digital audio and video over internet.
+	-> In 1995 the first public videoconference between North America and Africa took place, linking a technofair in San Francisco with a techno-rave and cyberdeli in Cape Town.
+	-> At nearly the same time, MPEG   4   was   designed   that   accept   wide   range   of compression quality is bit  rate trade off.
+	-> https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/Tage_Erlander_1960-tal.jpg/220px-Tage_Erlander_1960-tal.jpg
+
+1997 - LSTMs
+	->  Sepp Hochreiter and Jürgen Schmidhuber showed that LSTMs can solve complex longtime lag tasks that could never be solved before
+	-> The field was still in slow-phase, even after the development of CNNs, LSTMs, Backpropogation, Gradient descent, etc due to the low processing power available at that time.
+	-> https://cdn.analyticsvidhya.com/wp-content/uploads/2017/12/10131302/13.png
+
+2006-2009 - The deep revival
+	-> Hinton and Salakhutdinov described an effective way of initializing the weights that allows deep autoencoder networks to learn alow-dimensional representation of data
+	-> Other related works showed how neural network can be trained efficiently using the existing technologies. These researches led to the revival of neural networks and the technology started blooming.
+	-> Better optimization methods, better activation functions, deeper networks, and finally, faster hardware led neural networks beat humans at their own games like attari, Go, Chess etc. 
+	-> https://i2.wp.com/bdtechtalks.com/wp-content/uploads/2018/02/deep-neural-networks.png?resize=696%2C424&ssl=1
+
+2014 - : Recent times
+	-> Many research papers for Video captioning, Visual Question Answering, Visual Tracking, Video Summarization, etc were published during these period.
+	-> Most of them used Deep Neural Network and beaten the pre-existing technology by a huge margin.
+	-> Some of the papers are listed here, Donahue et al. (Video Captioning)[https://arxiv.org/abs/1411.4389], Santoro et al. (Visual Question Answering)[https://arxiv.org/abs/1706.01427], Zhong Ji (Video Summarization)[https://arxiv.org/abs/1708.09545]
+	-> https://image.slidesharecdn.com/mcvm42017lecture6-videoanalysiswithcnn-170203070557/95/video-analysis-with-convolutional-neural-networks-master-computer-vision-barcelona-2017-78-638.jpg?cb=1486106142

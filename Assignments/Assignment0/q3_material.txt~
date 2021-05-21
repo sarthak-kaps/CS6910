@@ -1,0 +1,28 @@
+1. 1952-1962 - The rise of ASR
+	-> First Speech recognition software developed by Bell Laboratories called "Audrey" in 1952
+	-> Ten years later, IBM introduced "Shoebox" , which understood and responded to 16 words in English.
+	-> By the end of 60s, the technology could support words with 4 vowels and 9 consonants.
+	-> https://www.ibm.com/ibm/history/ibm100/images/icp/R043335K63151Z06/us__en_us__ibm100__pioneering_speech__shoebox__620x350.jpg
+	
+	
+2. 1965-1975 - Hidden Markov Models (HMMs)
+	-> One of the breakthroughs came from a statistical method known as HMM.
+	->  Instead of just using words and looking for sound patterns, the HMM estimated the probability of the unknown sounds actually being words.
+	-> https://miro.medium.com/max/700/1*0xjHjL19uK0d6llcEJ0Z0w.png
+	
+3. 1990-2000 - Rise of machines
+	-> With the advent of technology, CPUs became more powerful and allowed ASRs to reach next level.
+	-> Softwares like Dragon Dictate came into existence which offered multi-thousand words and features like NLP.
+	-> In 1997, same company introduced another software called Dragon NaturallySpeaking.
+	-> https://cdn.britannica.com/s:1500x700,q:85/08/23608-004-47D6DC21/IBM-Personal-Computer-machine-Microsoft-MS-DOS-operating-1981.jpg
+	
+4. 2010-2012 - Voice search and assistants
+	-> There weren't many great advancements until 2010, when SRI research developed SIRI.
+	-> Then google voice search came out and many other great apps started getting developed. 
+	-> https://searchengineland.com/figz/wp-content/seloads/2015/03/voice-search-app-ss-1920-800x450.jpg
+	
+5. 2016-2017 - Recent advancements
+	-> IBM research acheived a word error rate of 6.9%.
+	-> Microsoft later surpased it to 5.9%, which was again beaten by IBM to 5.5%
+	-> However, Google claims to have the lowest rate of 4.9%.
+	-> https://developer.nvidia.com/blog/wp-content/uploads/2019/12/Conversation_AI_Workflow_v02.png
