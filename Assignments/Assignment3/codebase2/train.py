@@ -13,7 +13,7 @@ from model_create import Decoder, Encoder
 config_defaults = {
     "epochs": 5,
     "batch_size": 64,
-    "layer_dimensions": [128],
+    "layer_dimensions": [256],
     "cell_type": "GRU",
     "dropout": 0.1,
     "recurrent_dropout": 0,
@@ -203,7 +203,7 @@ for (batch, (inpu, target)) in enumerate(dataset.take(steps_per_epoch)):
                         for c in target_np[i] if(c > 2)])
         inp = "".join([inp_lang.index_word[c]
                        for c in inpu_np[i] if(c > 3)])
-    # if(batch % 100) == 0:
+
         edit_dist = editDistance(predicted_sent, targ,
                                  len(predicted_sent), len(targ))/len(targ)
         val_edit_dist += edit_dist
@@ -212,10 +212,10 @@ for (batch, (inpu, target)) in enumerate(dataset.take(steps_per_epoch)):
         if (i + batch*BATCH_SIZE < num_log):
             log_table.append([inp, predicted_sent, targ, edit_dist])
         if ((config.attention) and (i + batch*BATCH_SIZE < num_attn_log)):
-            attention_plot = attention_plots[i][:len(batch_results[i]),
-                                                :len(targ)+2]
+            attention_plot = attention_plots[i][:len(predicted_sent)+1,
+                                                :len(inp)+2]
             plot_attention(attention_plot, [
-                           '<start>'] + list(targ) + ['<end>'], list("".join(batch_results[i].split(' ')[:-1])) + ["<end>"])
+                           '<start>'] + list(inp) + ['<end>'], list(predicted_sent) + ["<end>"])
 
     print(
         f'Input: {inp}, Prediction: {predicted_sent}, Target:{targ}, Edit-dist: {edit_dist}')

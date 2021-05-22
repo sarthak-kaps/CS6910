@@ -13,9 +13,9 @@ parameters:
     values:
       - [128]
       - [128, 128]
-      - [256]
-      - [256,128]
       - [128,128, 128]
+      - [256]
+      - [256,256]
   epochs:
     distribution: categorical
     values:

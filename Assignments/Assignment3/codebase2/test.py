@@ -138,7 +138,7 @@ def evaluate(inp):
     return batch_results, attention_plots
 
 
-def plot_attention(attention, sentence, predicted_sentence):
+def plot_attention(attention, sentence, predicted_sentence, idx):
     fig = plt.figure(figsize=(10, 10))
     hindi_font = FontProperties(
         fname="/usr/share/fonts/truetype/lohit-devanagari/Lohit-Devanagari.ttf")
@@ -150,7 +150,7 @@ def plot_attention(attention, sentence, predicted_sentence):
                        fontdict=fontdict)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
-    wandb.log({"Attention weights": plt})
+    wandb.log({f"Attention weights {idx}": plt})
     plt.show()
 
 
@@ -178,8 +178,8 @@ log_table = []
 num_log = 20
 num_attn_log = 10
 
-val_edit_dist = 0.0
-val_acc = 0
+test_edit_dist = 0.0
+test_acc = 0
 
 # Load dataset
 test_input_tensor, test_target_tensor, test_inp_lang, test_targ_lang, test_max_length_targ, test_max_length_inp = load_tensors(
@@ -190,7 +190,7 @@ dataset = tf.data.Dataset.from_tensor_slices(
     (input_tensor, target_tensor)).shuffle(BUFFER_SIZE)
 dataset = dataset.batch(BATCH_SIZE, drop_remainder=True)
 
-val_acc = 0
+test_acc = 0
 for (batch, (inpu, target)) in enumerate(dataset.take(steps_per_epoch)):
     batch_results, attention_plots = evaluate(inpu)
     for i in range(target.shape[0]):
@@ -204,25 +204,25 @@ for (batch, (inpu, target)) in enumerate(dataset.take(steps_per_epoch)):
     # if(batch % 100) == 0:
         edit_dist = editDistance(predicted_sent, targ,
                                  len(predicted_sent), len(targ))/len(targ)
-        val_edit_dist += edit_dist
+        test_edit_dist += edit_dist
         if(targ == predicted_sent):
-            val_acc += 1
+            test_acc += 1
         if (i + batch*BATCH_SIZE < num_log):
             log_table.append([inp, predicted_sent, targ, edit_dist])
         if ((config.attention) and (i + batch*BATCH_SIZE < num_attn_log)):
-            attention_plot = attention_plots[i][:len(batch_results[i]),
-                                                :len(targ)+2]
+            attention_plot = attention_plots[i][:len(predicted_sent)+1,
+                                                :len(inp)+2]
             plot_attention(attention_plot, [
-                           '<start>'] + list(targ) + ['<end>'], list("".join(batch_results[i].split(' ')[:-1])) + ["<end>"])
+                           '<start>'] + list(inp) + ['<end>'], list(predicted_sent) + ["<end>"], i+1)
 
     print(
         f'Input: {inp}, Prediction: {predicted_sent}, Target:{targ}, Edit-dist: {edit_dist}')
 
-VAL_SAMPLES = input_tensor.shape[0]
+TEST_SAMPLES = input_tensor.shape[0]
 
-val_edit_dist /= VAL_SAMPLES
-val_acc /= VAL_SAMPLES
+test_edit_dist /= TEST_SAMPLES
+test_acc /= TEST_SAMPLES
 
-wandb.log({"Validation log table": wandb.Table(data=log_table,
-                                               columns=["Input", "Prediction", "Target", "Edit-dist"])})
-wandb.log({"val_avg_edit_dist": val_edit_dist, "val_avg_acc": val_acc})
+wandb.log({"Test log table": wandb.Table(data=log_table,
+                                         columns=["Input", "Prediction", "Target", "Edit-dist"])})
+wandb.log({"test_avg_edit_dist": test_edit_dist, "test_avg_acc": test_acc})
