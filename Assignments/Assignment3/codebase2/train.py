@@ -11,9 +11,9 @@ from data_process import load_tensors
 from model_create import Decoder, Encoder
 
 config_defaults = {
-    "epochs": 5,
+    "epochs": 1,
     "batch_size": 64,
-    "layer_dimensions": [256],
+    "layer_dimensions": [16],
     "cell_type": "GRU",
     "dropout": 0.1,
     "recurrent_dropout": 0,
@@ -26,7 +26,7 @@ config_defaults = {
 
 # Initialize the project
 wandb.init(project='assignment3',
-           group='attention_exp1',
+           group='attention_exp2',
            config=config_defaults)
 
 
@@ -116,8 +116,7 @@ for epoch in range(EPOCHS):
 
 
 def evaluate(inp):
-    attention_plots = [
-        np.zeros((max_length_targ, max_length_inp))]*(inp.shape[0])
+    attention_plots = []
     enc_output, enc_hidden = encoder(inp)
     dec_hidden = enc_hidden
     dec_input = tf.expand_dims(
@@ -126,11 +125,13 @@ def evaluate(inp):
     for t in range(max_length_targ):
         output = decoder(dec_input, dec_hidden, enc_output)
         predictions, dec_hidden = output[0], output[1]
-        attention_plots[:][t] = tf.reshape(output[2], (inp.shape[0], -1))
+        attention_plot = tf.reshape(output[2], (inp.shape[0], -1))
         predicted_id = tf.argmax(predictions, axis=1).numpy()
         batchpreds.append(predicted_id)
+        attention_plots.append(attention_plot)
         dec_input = tf.expand_dims(predicted_id, 1)
     batchpreds = np.array(batchpreds).T
+    attention_plots = np.transpose(np.array(attention_plots), [1, 0, 2])
     batch_results = []
     for i in range(inp.shape[0]):
         curr_result = ""
@@ -189,20 +190,20 @@ test_input_tensor, test_target_tensor, test_inp_lang, test_targ_lang, test_max_l
 
 # Create dataset
 dataset = tf.data.Dataset.from_tensor_slices(
-    (input_tensor, target_tensor)).shuffle(BUFFER_SIZE)
+    (test_input_tensor, test_target_tensor)).shuffle(BUFFER_SIZE)
 dataset = dataset.batch(BATCH_SIZE, drop_remainder=True)
 
 val_acc = 0
 for (batch, (inpu, target)) in enumerate(dataset.take(steps_per_epoch)):
     batch_results, attention_plots = evaluate(inpu)
+    inpu_np = np.array(inpu)
+    target_np = np.array(target)
     for i in range(target.shape[0]):
         predicted_sent = "".join(batch_results[i].split(' ')[:-2])
-        target_np = np.array(target)
-        inpu_np = np.array(inpu)
-        targ = "".join([targ_lang.index_word[c]
-                        for c in target_np[i] if(c > 2)])
-        inp = "".join([inp_lang.index_word[c]
-                       for c in inpu_np[i] if(c > 3)])
+        targ = "".join([test_targ_lang.index_word[c]
+                        for c in target_np[i] if(c > test_targ_lang.word_index['<end>'])])
+        inp = "".join([test_inp_lang.index_word[c]
+                       for c in inpu_np[i] if(c > test_inp_lang.word_index['<end>'])])
 
         edit_dist = editDistance(predicted_sent, targ,
                                  len(predicted_sent), len(targ))/len(targ)
@@ -220,7 +221,7 @@ for (batch, (inpu, target)) in enumerate(dataset.take(steps_per_epoch)):
     print(
         f'Input: {inp}, Prediction: {predicted_sent}, Target:{targ}, Edit-dist: {edit_dist}')
 
-VAL_SAMPLES = len(test_input_tensor)
+VAL_SAMPLES = test_input_tensor.shape[0]
 
 val_edit_dist /= VAL_SAMPLES
 val_acc /= VAL_SAMPLES

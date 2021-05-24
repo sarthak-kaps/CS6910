@@ -1,7 +1,7 @@
 program: ../codebase2/train.py
 command:
   - python
-  - ${program}
+  - ../codebase2/train.py
   - ${args}
 method: bayes
 metric:
