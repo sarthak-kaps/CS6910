@@ -58,43 +58,46 @@ reverse_input_char_index = dict(
 reverse_target_char_index = dict(
     (i, char) for char, i in data_encoder.target_token_index.items())
 
-def decode_sequence(input_seq, encoder_model, decoder_model):
+def decode_sequence(input_seqs, encoder_model, decoder_model):
     # Encode the input as state vectors.
-    states_value, enc_out = encoder_model.predict(input_seq)
-
-    # Generate empty target sequence of length 1.
-    target_seq = np.zeros((1, 1, data_encoder.num_decoder_tokens))
+    states_value, enc_out = encoder_model.predict(input_seqs)
+    
+    old_states_value = states_value[:]
+    
+   
+    target_seq = np.zeros((len(input_seqs), 1, data_encoder.num_decoder_tokens))
     # Populate the first character of target sequence with the start character.
-    target_seq[0, 0, data_encoder.target_token_index['\t']] = 1.
+    target_seq[:, 0, data_encoder.target_token_index['\t']] = 1.
 
     # Sampling loop for a batch of sequences
-    # (to simplify, here we assume a batch of size 1).
     stop_condition = False
-    # Creating a list then using "".join() is usually much faster for string creation
-    decoded_sentence = []
+    decoded_sentence = [""] * len(input_seqs)
+    
     while not stop_condition:
-        to_split = decoder_model.predict(
-            [target_seq, states_value, enc_out])
+     
+        to_split = decoder_model.predict([target_seq, states_value, enc_out])
+        
         output_tokens, states_value, attn_weights = to_split[0], list(
             to_split[1:-1]), to_split[-1]
-
-        # Sample a token
-#         print(output_tokens)
-        sampled_token_index = np.argmax(output_tokens[0, 0])
-        sampled_char = reverse_target_char_index[sampled_token_index]
-        decoded_sentence.append(sampled_char)
-
-        # Exit condition: either hit max length
-        # or find stop character.
-        if sampled_char == '\n' or len(decoded_sentence) > data_encoder.max_decoder_seq_length:
+  
+  
+        sampled_token_index = np.argmax(output_tokens, axis = -1)
+        sampled_chars = [reverse_target_char_index[sampled_token_index[i][0]] for i in range(0, len(input_seqs))]
+        for i in range(0, len(input_seqs)) :
+            decoded_sentence[i] = decoded_sentence[i] + str(sampled_chars[i])
+      
+      # Exit condition: hit max length
+        if len(decoded_sentence[0]) > data_encoder.max_decoder_seq_length:
             stop_condition = True
 
         # Update the target sequence (of length 1).
-        target_seq = np.zeros((1, 1, data_encoder.num_decoder_tokens))
-        target_seq[0, 0, sampled_token_index] = 1.
+        target_seq = np.zeros((len(input_seqs), 1, data_encoder.num_decoder_tokens))
+        for i in range(0, len(input_seqs)) :
+          target_seq[i, 0, sampled_token_index[i]] = 1.
 
-    return "".join(decoded_sentence)
-
+    decoded_sentence = [seq[0:seq.find('\n')] for seq in decoded_sentence]
+    #print(decoded_sentence)
+    return decoded_sentence
 
 def editDistance(str1, str2, m, n):
     # Create a table to store results of subproblems
@@ -136,25 +139,32 @@ n = len(input_seqs)
 val_avg_edit_dist = 0
 log_table = []
 test_acc = 0
+BATCH_SIZE = 64
+
 predictions_vanilla = open("predictions_vanilla" + model_name, 'w')
-for seq_index in tqdm(range(n)):
+for seq_index in tqdm(range(0, n, BATCH_SIZE)):
     # Take one sequence (part of the training set)
     # for trying out decoding.
-    input_seq = input_seqs[seq_index:seq_index+1]
-    decoded_sentence = str(decode_sequence(
-        input_seq, inf_enc_model, inf_dec_model)[:-1])
-    target_sentence = str(target_sents[seq_index:seq_index+1][0][1:-1])
-    edit_dist = editDistance(decoded_sentence, target_sentence, len(
-        decoded_sentence), len(target_sentence))/len(target_sentence)
-    val_avg_edit_dist += edit_dist
-    if(decoded_sentence == target_sentence):
-        test_acc += 1
-    predictions_vanilla.write(input_texts[seq_index] + " | " + decoded_sentence + " | " + target_sentence + '\n')
-    if(seq_index < 50):
-        log_table.append(
-            [input_texts[seq_index], decoded_sentence, target_sentence, edit_dist])
-        print({f"input_{seq_index}": input_texts[seq_index], f"output_{seq_index}": decoded_sentence,
-               f"target_{seq_index}": target_sentence, f"edit_distance_{seq_index}": edit_dist})
+    input_seq = input_seqs[seq_index:min(n, seq_index + BATCH_SIZE)]
+    decoded_sentences = decode_sequence(
+        input_seq, inf_enc_model, inf_dec_model)
+    target_sentences = [str(target_sents[i : i + 1][0][1:-1]) for i in range(seq_index, min(n, seq_index + BATCH_SIZE))]
+    edit_distances = []
+    for i in range(0, len(decoded_sentences)) :
+      edit_dist = editDistance(decoded_sentences[i], target_sentences[i], len(
+          decoded_sentences[i]), len(target_sentences[i]))/len(target_sentences[i])
+      val_avg_edit_dist += edit_dist
+      edit_distances.append(edit_dist)
+      if(decoded_sentences[i] == target_sentences[i]):
+          test_acc += 1
+    for i in range(seq_index, min(n, seq_index + BATCH_SIZE)) :
+        predictions_vanilla.write(input_texts[i] + " | " + decoded_sentences[i - seq_index] + " | " + target_sentences[i - seq_index] + '\n')
+    if(seq_index < BATCH_SIZE):
+        for i in range(seq_index, min(n, seq_index + BATCH_SIZE)) :
+          log_table.append(
+              [input_texts[i], decoded_sentences[i - seq_index], target_sentences[i - seq_index], edit_distances[i - seq_index]])
+          print({f"input_{i}": input_texts[i], f"output_{i}": decoded_sentences[i - seq_index],
+                 f"target_{i}": target_sentences[i - seq_index], f"edit_distance_{i}": edit_distances[i - seq_index]})
 
 wandb.log({"Validation log table": wandb.Table(data=log_table,
                                                columns=["Input", "Prediction", "Target", "Edit-dist"])})
