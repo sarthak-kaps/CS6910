@@ -1,0 +1,8 @@
+!sudo apt-get install fonts-indic
+!ls -a /usr/share/fonts/truetype/lohit-devanagari/
+!unzip upload.zip
+!pip install wandb
+!pip install matplotlib
+
+!cd sweep_configs && wandb sweep sweep_with_attention.yaml
+!cd sweep_configs && wandb agent rudradesai200/uncategorized/0a2t7g1u --count 20

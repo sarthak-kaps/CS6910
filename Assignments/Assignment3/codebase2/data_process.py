@@ -7,13 +7,6 @@ import numpy as np
 
 np.random.seed(100)
 
-# Converts the unicode file to ascii
-
-
-def unicode_to_ascii(s):
-    return ''.join(c for c in unicodedata.normalize('NFD', s)
-                   if unicodedata.category(c) != 'Mn')
-
 
 def preprocess_sentence(w):
     w = " ".join(list(w))
