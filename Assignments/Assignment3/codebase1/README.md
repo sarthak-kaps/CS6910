@@ -30,16 +30,32 @@ Codebase1 consists of the following files -
 * beam_search.py - 
   * This file implements beam search.
   * This is a more basic version and runs slow, it is given here for clarity.
- * beam_search_fast.py -
-  * This file is a more efficient implementation of beam search that we use for inference.
-  * The implementation is carried out through 2 classes - 
-    * `class Sequence` - This class maintains the sequence and its meta data during decoding.
-    * `class BeamSearch` - This class contains the core of the implementation of beam search.
- * test.py - 
-    * This file runs the given model on the test data.
-    * The path to the directory where the model is saved needs to be provided as input.
-    * We have uploaded our best model here so that you can run the best model on the test data.
- * test_with_beam_search.py - 
-    * This file does the same job as `test.py`.
-    * The only difference is that testing is done using beam search.
-    * Along with the path to the model we need to supply the beam width as input.  
+* beam_search_fast.py -
+ * This file is a more efficient implementation of beam search that we use for inference.
+ * The implementation is carried out through 2 classes - 
+   * `class Sequence` - This class maintains the sequence and its meta data during decoding.
+   * `class BeamSearch` - This class contains the core of the implementation of beam search.
+* test.py - 
+   * This file runs the given model on the test data.
+   * The path to the directory where the model is saved needs to be provided as input.
+   * We have uploaded our best model here so that you can run the best model on the test data.
+* test_with_beam_search.py - 
+   * This file does the same job as `test.py`.
+   * The only difference is that testing is done using beam search.
+   * Along with the path to the model we need to supply the beam width as input.  
+
+## Best Models
+We have uploaded 2 of our best models - 
+* Good_model_GRU_beam_search - This is uploaded on wandb report as well. Test Accuracy - 41 %
+* Good_model_GRU_beam_5 - This model is similar to above but with beam width 5. Test Accuracy - 41 %.
+
+## Testing
+You can run the test files as follows - 
+* test.py - 
+  * Use the command : `$ python test.py`. 
+  * It will ask the name of the model. Enter one of the 2 best models as name and it will run the test data over them without beam search.
+* test_with_beam_search.py - 
+  * Use the command : `$ python test_with_beam_search.py`.
+  * It will ask the name of the model. Enter one of the 2 best models as name.
+  * It will ask for beam width. Enter beam width value (preferably 2, 3, 4, 5).
+  * It will run the test data over the model with beam search.
