@@ -41,7 +41,7 @@ data_encoder = encode_input.one_hot_encoder(
     decoder_target_data, input_texts_dict, target_texts_dict] = data_encoder.vectorize_data()
 
 
-model_name = input("Enter name of model folder")
+model_name = input("Enter name of model folder : ")
 
 # load saved model
 #model = tf.keras.models.load_model("Good_model_no_beam_search/train")
@@ -99,8 +99,8 @@ n = len(input_seqs)
 val_avg_edit_dist = 0
 log_table = []
 test_acc = 0
-BATCH_SIZE = 256
-beam_width = 3
+BATCH_SIZE = 64
+beam_width = int(input("Enter beam width : "))
 
 predictions_vanilla = open("predictions_vanilla" + model_name, 'w')
 for seq_index in tqdm(range(0, n, BATCH_SIZE)):

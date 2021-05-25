@@ -30,7 +30,7 @@ config_defaults = {
 
 # Initialize the project
 wandb.init(project='assignment3',
-        group='Batch Validation : Runs without attention and with beam search',
+        group='Batch Validation : Runs without attention and with beam search 2',
            config=config_defaults)
 
 # config file used for the current run
