@@ -1,7 +1,7 @@
 ### Codebase2
 
 - This directory contains our implementation for Neural Machine translation model with attention.
-- It contains 4 files.
+- It contains 5 files.
 
 #### data_process.py
 - Contains data processing part.
@@ -22,3 +22,8 @@
 - This file is used to get the final results based on best model obtained using hyperparameter tuning.
 - It logs various imporatant images like attention heatmap, as well as the prediction tables.
 - It can be run using the command `python test.py`.
+
+
+#### Predictions.json
+- This file contains prediction table for the test dataset.
+- This table can be found on the wandb report.
