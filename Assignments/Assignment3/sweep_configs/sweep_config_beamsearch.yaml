@@ -6,7 +6,7 @@ command:
 method: bayes
 metric:
   goal: minimize
-  name: loss
+  name: val_avg_edit_dist
 parameters:
   layer_dimensions:
     distribution: categorical
@@ -18,6 +18,8 @@ parameters:
       - [64,64,64]
       - [128, 128]
       - [512, 64]
+      - [512, 128]
+      - [256, 128, 64]
   epochs:
     distribution: categorical
     values:
@@ -60,9 +62,9 @@ parameters:
   beam_width:
     distribution: categorical
     values:
-      - 1
       - 2
       - 3
+      - 5
   attention_shape:
     distribution: categorical
     values:
