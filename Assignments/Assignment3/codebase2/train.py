@@ -7,26 +7,26 @@ import tensorflow as tf
 from matplotlib.font_manager import FontProperties
 
 import wandb
-from data_process import load_tensors
+from data_process import load_tensors, load_tensors_with_tokenizers
 from model_create import Decoder, Encoder
 
 config_defaults = {
-    "epochs": 1,
-    "batch_size": 64,
-    "layer_dimensions": [16],
-    "cell_type": "GRU",
+    "epochs": 5,
+    "batch_size": 256,
+    "layer_dimensions": [256],
+    "cell_type": "LSTM",
     "dropout": 0.1,
     "recurrent_dropout": 0,
     "optimizer": "adam",
     "attention": True,
-    "attention_shape": 128,
+    "attention_shape": 64,
     "embedding_dim": 128
 }
 
 
 # Initialize the project
 wandb.init(project='assignment3',
-           group='attention_exp2',
+           group='attention_exp4',
            config=config_defaults)
 
 
@@ -185,8 +185,7 @@ val_edit_dist = 0.0
 val_acc = 0
 
 # Load dataset
-test_input_tensor, test_target_tensor, test_inp_lang, test_targ_lang, test_max_length_targ, test_max_length_inp = load_tensors(
-    "dev", 5000)
+test_input_tensor, test_target_tensor = load_tensors_with_tokenizers(inp_lang,targ_lang,"dev", 5000)
 
 # Create dataset
 dataset = tf.data.Dataset.from_tensor_slices(
@@ -200,13 +199,13 @@ for (batch, (inpu, target)) in enumerate(dataset.take(steps_per_epoch)):
     target_np = np.array(target)
     for i in range(target.shape[0]):
         predicted_sent = "".join(batch_results[i].split(' ')[:-2])
-        targ = "".join([test_targ_lang.index_word[c]
-                        for c in target_np[i] if(c > test_targ_lang.word_index['<end>'])])
-        inp = "".join([test_inp_lang.index_word[c]
-                       for c in inpu_np[i] if(c > test_inp_lang.word_index['<end>'])])
+        targ = "".join([targ_lang.index_word[c]
+                        for c in target_np[i] if((c != targ_lang.word_index['<end>']) and (c != targ_lang.word_index['<start>'])  and (c != 0))])
+        inp = "".join([inp_lang.index_word[c]
+                    for c in inpu_np[i] if((c != inp_lang.word_index['<end>']) and (c != inp_lang.word_index['<start>']) and (c != 0))])
 
         edit_dist = editDistance(predicted_sent, targ,
-                                 len(predicted_sent), len(targ))/len(targ)
+                                len(predicted_sent), len(targ))/len(targ)
         val_edit_dist += edit_dist
         if(targ == predicted_sent):
             val_acc += 1
@@ -216,7 +215,7 @@ for (batch, (inpu, target)) in enumerate(dataset.take(steps_per_epoch)):
             attention_plot = attention_plots[i][:len(predicted_sent)+1,
                                                 :len(inp)+2]
             plot_attention(attention_plot, [
-                           '<start>'] + list(inp) + ['<end>'], list(predicted_sent) + ["<end>"])
+                            '<start>'] + list(inp) + ['<end>'], list(predicted_sent) + ["<end>"])
 
     print(
         f'Input: {inp}, Prediction: {predicted_sent}, Target:{targ}, Edit-dist: {edit_dist}')

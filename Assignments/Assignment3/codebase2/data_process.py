@@ -32,6 +32,11 @@ def tokenize(lang):
         tensor, padding='post')
     return tensor, lang_tokenizer
 
+def use_tokenizer(lang, lang_tokenizer):
+    tensor = lang_tokenizer.texts_to_sequences(lang)
+    tensor = tf.keras.preprocessing.sequence.pad_sequences(
+        tensor, padding='post')
+    return tensor
 
 def load_dataset(path, num_examples=None, shuffle=True):
     targ_lang, inp_lang = create_dataset(path, num_examples)
@@ -58,3 +63,10 @@ def load_tensors(dataset_type, num_examples, shuffle=True):
     max_length_targ, max_length_inp = target_tensor.shape[1], input_tensor.shape[1]
 
     return input_tensor, target_tensor, inp_lang, targ_lang, max_length_targ, max_length_inp
+
+def load_tensors_with_tokenizers(inp_tokenizer, targ_tokenizer, dataset_type, num_examples, shuffle=True):
+    path_to_file = f"../dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled.{dataset_type}.tsv"
+    targ_lang, inp_lang = create_dataset(path_to_file, num_examples)
+    input_tensor = use_tokenizer(inp_lang,inp_tokenizer)
+    target_tensor = use_tokenizer(targ_lang, targ_tokenizer)
+    return input_tensor, target_tensor
