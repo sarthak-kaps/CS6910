@@ -6,7 +6,7 @@ command:
 method: bayes
 metric:
   goal: minimize
-  name: loss
+  name: val_avg_edit_dist
 parameters:
   layer_dimensions:
     distribution: categorical
