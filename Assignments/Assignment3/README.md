@@ -8,3 +8,4 @@ The Assignment has been implemented in 3 folders -
   * sweep_without_attention.yaml - Contains configurations for models that do not have attention and beam search
   * sweep_config_beamsearch.yaml - Contains configurations for models that do not have attention but have beam search
   * sweep_config_attention.yaml - Contains configurations for models that use attention 
+  * sweep_config_attention_final.yaml - Contains more configurations for models that use attention
