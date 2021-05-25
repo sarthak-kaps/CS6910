@@ -1,15 +1,9 @@
+import tensorflow as tf
+import encode_input
+import beam_search_fast
 import numpy as np
 from tqdm import tqdm
-from wandb.keras import WandbCallback
-
-import encode_input
-import model_maker
 import wandb
-import os
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '10'
-val_samples = 100
-train_samples = 1000000
 
 # Wandb default config
 config_defaults = {
@@ -26,15 +20,11 @@ config_defaults = {
 
 # Initialize the project
 wandb.init(project='assignment3',
-           group='Without Attention Run 2',
+           group='Best Model Test',
            config=config_defaults)
 
 # config file used for the current run
 config = wandb.config
-
-
-wandb.run.name = f"cell_type_{config.cell_type}_layer_org_{config.layer_dimensions}_drpout_{int(config.dropout*100)}%_rec-drpout_{int(config.recurrent_dropout*100)}%_bs_{config.batch_size}_opt_{config.optimizer}"
-#wandb.run.name = "model_1"
 
 base_data_set_name = "../dakshina_dataset_v1.0/hi/lexicons/hi.translit.sampled."
 
@@ -50,34 +40,17 @@ data_encoder = encode_input.one_hot_encoder(
 [encoder_input_data, decoder_input_data,
     decoder_target_data, input_texts_dict, target_texts_dict] = data_encoder.vectorize_data()
 
-# construct the model from the given configurations
-model, inf_enc_model, inf_dec_model = model_maker.make_model(
-    config, data_encoder.max_encoder_seq_length, data_encoder.num_encoder_tokens, data_encoder.max_decoder_seq_length, data_encoder.num_decoder_tokens)
 
-print(model.summary())
+model_name = input("Enter name of model folder")
 
-# compile the model
-model.compile(
-    optimizer=config.optimizer, loss="categorical_crossentropy",  metrics=['accuracy']
-)
+# load saved model
+#model = tf.keras.models.load_model("Good_model_no_beam_search/train")
+#print(model.summary())
 
+inf_enc_model = tf.keras.models.load_model(model_name + "/inf-enc")
+inf_dec_model = tf.keras.models.load_model(model_name + "/inf-dec")
 
-# fit the model
-model.fit(
-    x=[encoder_input_data["train"][:train_samples],
-        decoder_input_data["train"][:train_samples]],
-    y=decoder_target_data["train"][:train_samples],
-    batch_size=config.batch_size,
-    epochs=config.epochs,
-    validation_data=([encoder_input_data["valid"],
-                       decoder_input_data["valid"]], decoder_target_data["valid"]),
-    callbacks=[WandbCallback(save_model=False)]
-)
-
-# Save model
-model.save(wandb.run.name+"/train")
-inf_enc_model.save(wandb.run.name+"/inf-enc")
-inf_dec_model.save(wandb.run.name+"/inf-dec")
+wandb.run.name = model_name
 
 # Reverse-lookup token index to decode sequences back to
 # something readable.
@@ -85,49 +58,6 @@ reverse_input_char_index = dict(
     (i, char) for char, i in data_encoder.input_token_index.items())
 reverse_target_char_index = dict(
     (i, char) for char, i in data_encoder.target_token_index.items())
-
-
-def decode_sequence(input_seqs, encoder_model, decoder_model):
-    # Encode the input as state vectors.
-    states_value, enc_out = encoder_model.predict(input_seqs)
-    
-    old_states_value = states_value[:]
-    
-   
-    target_seq = np.zeros((len(input_seqs), 1, data_encoder.num_decoder_tokens))
-    # Populate the first character of target sequence with the start character.
-    target_seq[:, 0, data_encoder.target_token_index['\t']] = 1.
-
-    # Sampling loop for a batch of sequences
-    stop_condition = False
-    decoded_sentence = [""] * len(input_seqs)
-    
-    while not stop_condition:
-     
-        to_split = decoder_model.predict([target_seq, states_value, enc_out])
-        
-        output_tokens, states_value, attn_weights = to_split[0], list(
-            to_split[1:-1]), to_split[-1]
-  
-  
-        sampled_token_index = np.argmax(output_tokens, axis = -1)
-        sampled_chars = [reverse_target_char_index[sampled_token_index[i][0]] for i in range(0, len(input_seqs))]
-        for i in range(0, len(input_seqs)) :
-            decoded_sentence[i] = decoded_sentence[i] + str(sampled_chars[i])
-      
-      # Exit condition: hit max length
-        if len(decoded_sentence[0]) > data_encoder.max_decoder_seq_length:
-            stop_condition = True
-
-        # Update the target sequence (of length 1).
-        target_seq = np.zeros((len(input_seqs), 1, data_encoder.num_decoder_tokens))
-        for i in range(0, len(input_seqs)) :
-          target_seq[i, 0, sampled_token_index[i]] = 1.
-
-    decoded_sentence = [seq[0:seq.find('\n')] for seq in decoded_sentence]
-    #print(decoded_sentence)
-    return decoded_sentence
-
 
 def editDistance(str1, str2, m, n):
     # Create a table to store results of subproblems
@@ -144,7 +74,7 @@ def editDistance(str1, str2, m, n):
 
             # If second string is empty, only option is to
             # remove all characters of second string
-            elif j == 0:
+            if j == 0:
                 dp[i][j] = i    # Min. operations = i
 
             # If last characters are same, ignore last char
@@ -162,21 +92,27 @@ def editDistance(str1, str2, m, n):
     return dp[m][n]
 
 
-input_seqs = encoder_input_data["valid"]
-target_sents = target_texts_dict["valid"]
-input_texts = input_texts_dict["valid"]
+input_seqs = encoder_input_data["test"]
+target_sents = target_texts_dict["test"]
+input_texts = input_texts_dict["test"]
 n = len(input_seqs)
 val_avg_edit_dist = 0
 log_table = []
-val_acc = 0
-BATCH_SIZE = 64
+test_acc = 0
+BATCH_SIZE = 256
+beam_width = 3
 
+predictions_vanilla = open("predictions_vanilla" + model_name, 'w')
 for seq_index in tqdm(range(0, n, BATCH_SIZE)):
     # Take one sequence (part of the training set)
     # for trying out decoding.
+    # make the beam search object
+    num_inputs = min(n, seq_index + BATCH_SIZE) - seq_index
+    bs = beam_search_fast.BeamSearch(beam_width, data_encoder.max_decoder_seq_length, data_encoder.target_token_index, num_inputs)
     input_seq = input_seqs[seq_index:min(n, seq_index + BATCH_SIZE)]
-    decoded_sentences = decode_sequence(
-        input_seq, inf_enc_model, inf_dec_model)
+    decoded_sentences = bs.apply(inf_enc_model, inf_dec_model, input_seq)
+    
+    decoded_sentences = ["".join(e[0].characters[1:-1]) for e in decoded_sentences]
     target_sentences = [str(target_sents[i : i + 1][0][1:-1]) for i in range(seq_index, min(n, seq_index + BATCH_SIZE))]
     edit_distances = []
     for i in range(0, len(decoded_sentences)) :
@@ -185,7 +121,11 @@ for seq_index in tqdm(range(0, n, BATCH_SIZE)):
       val_avg_edit_dist += edit_dist
       edit_distances.append(edit_dist)
       if(decoded_sentences[i] == target_sentences[i]):
-          val_acc += 1
+          test_acc += 1
+    
+    for i in range(seq_index, min(n, seq_index + BATCH_SIZE)) :
+        predictions_vanilla.write(input_texts[i] + " | " + decoded_sentences[i - seq_index] + " | " + target_sentences[i - seq_index] + '\n')
+
     if(seq_index < BATCH_SIZE):
         for i in range(seq_index, min(n, seq_index + BATCH_SIZE)) :
           log_table.append(
@@ -195,6 +135,11 @@ for seq_index in tqdm(range(0, n, BATCH_SIZE)):
 
 wandb.log({"Validation log table": wandb.Table(data=log_table,
                                                columns=["Input", "Prediction", "Target", "Edit-dist"])})
-val_avg_edit_dist /= n
-val_acc /= n
-wandb.log({"val_avg_edit_dist": val_avg_edit_dist, "val_avg_acc": val_acc})
+    
+
+#val_avg_edit_dist /= val_samples
+#val_acc /= val_samples
+#wandb.log({"val_avg_edit_dist": val_avg_edt_dist, "val_avg_acc": val_acc})
+
+print("Test accuracy is : ", test_acc / n)
+wandb.log({"Test accuracy" : test_acc / n})
