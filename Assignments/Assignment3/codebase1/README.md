@@ -1,4 +1,4 @@
-# Sequence To Sequence Model without Attention - Codebase1
+# Sequence To Sequence Model without Attention
 
 In this codebase we implemented a sequence to sequence model that took in a word from the English language and translated it to an equivalent word in the Hindi language
 such that the pronunciation of the word does not change when read in both the languages.
