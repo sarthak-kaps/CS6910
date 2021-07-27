@@ -1,4 +1,4 @@
-# Recurrent transliteration system
+# Recurrent Transliteration System
 Built a recurrent neural networks to build a transliteration system.
 
 We experimented with the Dakshina dataset released by Google. This dataset contains pairs of the following form: `xxx yyy` 
@@ -16,3 +16,5 @@ The Project has been implemented in 3 folders -
   * sweep_config_beamsearch.yaml - Contains configurations for models that do not have attention but have beam search
   * sweep_config_attention.yaml - Contains configurations for models that use attention 
   * sweep_config_attention_final.yaml - Contains more configurations for models that use attention
+
+Link to the report - [Link](https://wandb.ai/rudradesai200/assignment3/reports/Assignment-3--Vmlldzo2NTYxMDM)
